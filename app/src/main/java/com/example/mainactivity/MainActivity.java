@@ -77,13 +77,13 @@ public class MainActivity extends AppCompatActivity {
 
         appBarConfiguration =
                 new AppBarConfiguration.Builder(
-                        R.id.matplanFragment,
-                        R.id.kalenderFragment,
-                        R.id.onskelisteFragment,
-                        R.id.handlelisteFragment,
-                        R.id.familieboblaFragment,
-                        R.id.profilFragment,
-                        R.id.gruppeinformasjonFragment,
+                        R.id.meal_planFragment,
+                        R.id.calendarFragment,
+                        R.id.wishlistFragment,
+                        R.id.shopping_listFragment,
+                        R.id.family_bubbleFragment,
+                        R.id.profileFragment,
+                        R.id.group_infoFragment,
                         R.id.settingsFragment ).setDrawerLayout(drawer)
                         .build();
 
@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         navn = header.findViewById(R.id.DrawerFamilyName);
         id = header.findViewById(R.id.DrawerFamilyId);
         navn.setText(familieNavnet);
-        id.setText("Familie-ID: " + sharedPreferences.getString(User.FAMILIE, null));
+        id.setText("Family-ID: " + sharedPreferences.getString(User.FAMILIE, null));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)

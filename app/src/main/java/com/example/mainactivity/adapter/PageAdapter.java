@@ -4,8 +4,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
-import com.example.mainactivity.fragment.BursdagFragment;
-import com.example.mainactivity.fragment.KalenderSideFragment;
+import com.example.mainactivity.fragment.BirthdayFragment;
+import com.example.mainactivity.fragment.CalendarPageFragment;
 
 public class PageAdapter extends FragmentStateAdapter {
     public PageAdapter(Fragment fragment) {
@@ -17,11 +17,11 @@ public class PageAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                Log.i("PageAdapter", "Returning kalendere");
-                return new KalenderSideFragment();
+                Log.i("PageAdapter", "Returning calendare");
+                return new CalendarPageFragment();
             case 1:
-                Log.i("PageAdapter", "Returning bursdager");
-                return new BursdagFragment();
+                Log.i("PageAdapter", "Returning birthdayer");
+                return new BirthdayFragment();
         }
         Log.e("PageAdapter", "Returning null");
         return null;

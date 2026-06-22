@@ -10,7 +10,7 @@ app:cardElevation="3dp"
 android:background="@color/backgroundListItem"  >
 
 <androidx.constraintlayout.widget.ConstraintLayout
-    android:id="@+id/cardBursdag"
+    android:id="@+id/cardBirthday"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 

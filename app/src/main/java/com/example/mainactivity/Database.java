@@ -128,10 +128,10 @@ public class Database extends SQLiteOpenHelper {
     //                BIRTHDAY
 
     // Tabell BIRTHDAY m/ kolonner
-    public static final String TABLE_BIRTHDAY = "Bursdag";
+    public static final String TABLE_BIRTHDAY = "Birthday";
     public static final String COLUMN_NAME_BIRTHDAY = "Navn";
     public static final String COLUMN_BIRTHDAY_DATE = "Dato";
-    public static final String COLUMN_BIRTHDAY_FAMILYID = "FamilieId";
+    public static final String COLUMN_BIRTHDAY_FAMILYID = "FamilyId";
     public static final String COLUMN_BIRTHDAY_USERID = "UserID";
     public static final String COLUMN_BIRTHDAY_MADEBY_USERID = "MadeByUserID";
 
@@ -149,7 +149,7 @@ public class Database extends SQLiteOpenHelper {
     //                HANDLELISTE
 
     // Tabell HANDLELISTE m/ kolonner
-    public static final String TABLE_HANDLELISTE = "Handleliste";
+    public static final String TABLE_HANDLELISTE = "ShoppingList";
     public static final String COLUMN_HANDLELISTE_TITTEL = "Tittel";
     public static final String COLUMN_HANDLELISTE_USERID = "BrukerID";
 
@@ -164,9 +164,9 @@ public class Database extends SQLiteOpenHelper {
     //                HANDLELISTE-LISTE
 
     // Tabell HANDLELISTE m/ kolonner
-    public static final String TABLE_HANDLELISTE_LISTE = "HandlelisteListe";
-    public static final String COLUMN_HANDLELISTELISTE_ID = "ListeID";
-    public static final String COLUMN_HANDLELISTELISTE_VARE = "Vare";
+    public static final String TABLE_HANDLELISTE_LISTE = "ShoppingListList";
+    public static final String COLUMN_HANDLELISTELISTE_ID = "ListID";
+    public static final String COLUMN_HANDLELISTELISTE_VARE = "Item";
     public static final String COLUMN_HANDLELISTELISTE_CHECKED = "Checked";
 
     // Lage tabellen HANDLELISTE
@@ -181,7 +181,7 @@ public class Database extends SQLiteOpenHelper {
     //                MATPLAN
 
     // Tabell MATPLAN m/ kolonner
-    public static final String TABLE_MATPLAN = "Matplan";
+    public static final String TABLE_MATPLAN = "MealPlan";
     public static final String COLUMN_MATPLAN_FROM_DATE = "FromDate";
     public static final String COLUMN_MATPLAN_TO_DATE = "ToDate";
     public static final String COLUMN_MATPLAN_FAMILY_ID = "FamilyID";
@@ -198,7 +198,7 @@ public class Database extends SQLiteOpenHelper {
 
 
     // MATPLAN - LEGGER INN ANTALL DAGER OG STARTDAG
-    public static final String TABLE_OPPRETT_MATPLAN = "OpprettMatplan";
+    public static final String TABLE_OPPRETT_MATPLAN = "CreateMealPlan";
     public static final String COLUMN_STARTDAG = "Startdag";
     public static final String COLUMN_ANTALL_DAGER = "Antalldager";
 
@@ -210,8 +210,8 @@ public class Database extends SQLiteOpenHelper {
             ")";
 
     // MATPLAN - LEGGER INN ANTALL DAGER OG STARTDAG
-    public static final String TABLE_OPPRETT_SUBMATPLAN = "OpprettSubMatplan";
-    public static final String COLUMN__SUBMATPLAN_MATPLANID = "MatplanID";
+    public static final String TABLE_OPPRETT_SUBMATPLAN = "CreateSubMealPlan";
+    public static final String COLUMN__SUBMATPLAN_MATPLANID = "MealPlanID";
     public static final String COLUMN__SUBMATPLAN_DAY = "Day";
     public static final String COLUMN__SUBMATPLAN_DATE = "Date";
     public static final String COLUMN__SUBMATPLAN_FOOD = "Food";
@@ -229,7 +229,7 @@ public class Database extends SQLiteOpenHelper {
 
     //                KALENDER
 
-    public static final String TABLE_CALENDAR_ACTIVITY = "KalenderActivity";
+    public static final String TABLE_CALENDAR_ACTIVITY = "CalendarActivity";
     public static final String COLUMN__CALENDAR_ACTIVITY_DATE_FROM = "DateFrom";
     public static final String COLUMN__CALENDAR_ACTIVITY_DATE_TO = "DateTo";
     public static final String COLUMN__CALENDAR_ACTIVITY_TIME_FROM = "TimeFrom";
@@ -477,40 +477,40 @@ public class Database extends SQLiteOpenHelper {
 
     //              HANDLELISTE
 
-    public Cursor getAlleVarerFraHandleliste(int id) {
+    public Cursor getAlleItemrFraShoppingList(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_HANDLELISTE_LISTE + " WHERE " + COLUMN_HANDLELISTELISTE_ID + " = " + id;
         return db.rawQuery(query, null);
     }
 
-    public boolean updateVareIsCheckedHandleliste(int listeID, int isChecked) {
+    public boolean updateItemIsCheckedShoppingList(int listID, int isChecked) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_HANDLELISTELISTE_CHECKED, isChecked);
 
-        long result = db.update(TABLE_HANDLELISTE_LISTE, contentValues, COLUMN_ID + " = " + listeID, null);
+        long result = db.update(TABLE_HANDLELISTE_LISTE, contentValues, COLUMN_ID + " = " + listID, null);
 
         return result != -1;
     }
 
-    public boolean weekHandleliste(String tittel, int userID) {
+    public boolean weekShoppingList(String tittel, int userID) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_HANDLELISTE_TITTEL, tittel);
         contentValues.put(COLUMN_HANDLELISTE_USERID, userID);
 
-        Log.d(TAG, "Handleliste updated: " + tittel +  " in " + TABLE_HANDLELISTE);
+        Log.d(TAG, "ShoppingList updated: " + tittel +  " in " + TABLE_HANDLELISTE);
 
         long result = db.insert(TABLE_HANDLELISTE, null, contentValues);
         return result != -1;
     }
-    public long addvarerHandleliste(String vare, String id) {
+    public long addvarerShoppingList(String vare, String id) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_HANDLELISTELISTE_VARE, vare);
         contentValues.put(COLUMN_HANDLELISTELISTE_ID, id);
 
-        Log.d(TAG, "Handleliste updated: " + vare + " in " + TABLE_HANDLELISTE_LISTE);
+        Log.d(TAG, "ShoppingList updated: " + vare + " in " + TABLE_HANDLELISTE_LISTE);
 
         return  db.insert(TABLE_HANDLELISTE_LISTE, null, contentValues);
     }
@@ -551,7 +551,7 @@ public class Database extends SQLiteOpenHelper {
         return result != -1;
     }
 
-    public Cursor sjekkOmFamilieEksisterer(String familyID, String password) {
+    public Cursor sjekkOmFamilyEksisterer(String familyID, String password) {
         SQLiteDatabase db = this.getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_FAMILY +
                 " WHERE " + COLUMN_ID + " = " + familyID +
@@ -621,7 +621,7 @@ public class Database extends SQLiteOpenHelper {
     //                MATPLAN
 
     // LEGGER INN MIDLERTIDIG DATA FOR REGISTRERING AV MATPLAN
-    public boolean addTempDataMatplan(String id, String antallDager, String startDag) {
+    public boolean addTempDataMealPlan(String id, String antallDager, String startDag) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_ANTALL_DAGER, antallDager);
@@ -636,7 +636,7 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // LEGGER UKENE INN I MATPLAN
-    public boolean addWeekToMatplan(String fromDate, String toDate, int familyID, int week) {
+    public boolean addWeekToMealPlan(String fromDate, String toDate, int familyID, int week) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_MATPLAN_FROM_DATE, fromDate);
@@ -651,13 +651,13 @@ public class Database extends SQLiteOpenHelper {
     }
 
     // OPPDATERER UKENE I DATABASEN
-    public boolean changeWeekMatplan (String id, String nyUke) {
+    public boolean changeWeekMealPlan (String id, String nyUke) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_MATPLAN_UKE, nyUke);
 
 
-        Log.d(TAG, "Matplan updated: " + nyUke + ", " + " in " + TABLE_MATPLAN);
+        Log.d(TAG, "MealPlan updated: " + nyUke + ", " + " in " + TABLE_MATPLAN);
 
         String whereClause = "id=?";
         String whereArgs[] = {id};
@@ -666,39 +666,39 @@ public class Database extends SQLiteOpenHelper {
         return result != -1;
     }
 
-    public Cursor getMatplanIdByLastRow() {
+    public Cursor getMealPlanIdByLastRow() {
         SQLiteDatabase db = this.getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_MATPLAN  + " ORDER BY " + COLUMN_ID + " DESC LIMIT 1";
         return db.rawQuery(query, null);
     }
 
-    public long makeSubMatplan(int matplanID, String day, String dateOnStringFrom, int familyID) {
+    public long makeSubMealPlan(int meal_planID, String day, String dateOnStringFrom, int familyID) {
         SQLiteDatabase db = this.getReadableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(COLUMN__SUBMATPLAN_MATPLANID, matplanID);
+        values.put(COLUMN__SUBMATPLAN_MATPLANID, meal_planID);
         values.put(COLUMN__SUBMATPLAN_DAY, day);
         values.put(COLUMN__SUBMATPLAN_DATE, dateOnStringFrom);
         values.put(COLUMN__SUBMATPLAN_FAMILYID, familyID);
 
-        System.out.println("New SUBMATPLAN (Database): " + "\nIn wishlist " + matplanID + "\nDay " + day + "\nDate " + dateOnStringFrom);
+        System.out.println("New SUBMATPLAN (Database): " + "\nIn wishlist " + meal_planID + "\nDay " + day + "\nDate " + dateOnStringFrom);
 
         return db.insert(TABLE_OPPRETT_SUBMATPLAN, null, values);
 
     }
 
-    public Cursor getAllFoodplansForFoodplan(int matplanID) {
+    public Cursor getAllFoodplansForFoodplan(int meal_planID) {
         SQLiteDatabase db = this.getWritableDatabase();
-        String query = "SELECT * FROM " + TABLE_OPPRETT_SUBMATPLAN + " WHERE " + COLUMN__SUBMATPLAN_MATPLANID + " = " + matplanID;
+        String query = "SELECT * FROM " + TABLE_OPPRETT_SUBMATPLAN + " WHERE " + COLUMN__SUBMATPLAN_MATPLANID + " = " + meal_planID;
         return db.rawQuery(query, null);
     }
 
-    public boolean updateFoodInMatplan(int subMatplanID, String food) {
+    public boolean updateFoodInMealPlan(int subMealPlanID, String food) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN__SUBMATPLAN_FOOD, food);
 
-        long result = db.update(TABLE_OPPRETT_SUBMATPLAN, contentValues, COLUMN_ID + " = " + subMatplanID, null);
+        long result = db.update(TABLE_OPPRETT_SUBMATPLAN, contentValues, COLUMN_ID + " = " + subMealPlanID, null);
 
         return result != -1;
     }
