@@ -27,8 +27,12 @@ class FamilyRepository(
     val currentUserId: Flow<Long?> = session.currentUserId
 
     val themeMode: Flow<ThemeMode> = session.themeMode
+    val notificationsEnabled: Flow<Boolean> = session.notificationsEnabled
+    val notifyDaysBefore: Flow<Int> = session.notifyDaysBefore
 
     suspend fun setThemeMode(mode: ThemeMode) = session.setThemeMode(mode)
+    suspend fun setNotificationsEnabled(enabled: Boolean) = session.setNotificationsEnabled(enabled)
+    suspend fun setNotifyDaysBefore(days: Int) = session.setNotifyDaysBefore(days)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val currentUser: Flow<UserEntity?> = currentUserId.flatMapLatest { id ->

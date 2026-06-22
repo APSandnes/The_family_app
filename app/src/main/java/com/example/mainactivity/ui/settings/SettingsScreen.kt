@@ -1,6 +1,12 @@
 package com.example.mainactivity.ui.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,18 +39,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mainactivity.data.ThemeMode
 import com.example.mainactivity.ui.components.FeatureTopBar
-import androidx.compose.foundation.clickable
+
+private val LEAD_TIME_OPTIONS = listOf(
+    "Same day" to 0,
+    "1 day" to 1,
+    "2 days" to 2,
+    "7 days" to 7
+)
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
-    var notifications by remember { mutableStateOf(true) }
+    val context = LocalContext.current
     var location by remember { mutableStateOf(false) }
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
+    val notificationsEnabled by vm.notificationsEnabled.collectAsStateWithLifecycle()
+    val notifyDaysBefore by vm.notifyDaysBefore.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> vm.setNotificationsEnabled(granted, context) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -55,11 +74,71 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ThemeSelector(selected = themeMode, onSelect = vm::setThemeMode)
-            ToggleRow(Icons.Filled.Notifications, "Notifications", "Family activity and reminders", notifications) { notifications = it }
+            ToggleRow(
+                icon = Icons.Filled.Notifications,
+                title = "Notifications",
+                subtitle = "Family activity and reminders",
+                checked = notificationsEnabled,
+                onChange = { enabled ->
+                    if (!enabled) {
+                        vm.setNotificationsEnabled(false, context)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        vm.setNotificationsEnabled(true, context)
+                    }
+                }
+            )
+            AnimatedVisibility(visible = notificationsEnabled) {
+                LeadTimeSelector(selected = notifyDaysBefore, onSelect = vm::setNotifyDaysBefore)
+            }
             ToggleRow(Icons.Filled.Palette, "Visible on family map", "Share your location with family", location) { location = it }
             InfoCard(Icons.Filled.Lock, "Privacy", "Your data is stored locally and credentials are hashed.")
             InfoCard(Icons.Filled.Info, "About", "The Family App · v2.0 — one home for everything you share.")
         }
+    }
+}
+
+@Composable
+private fun LeadTimeSelector(selected: Int, onSelect: (Int) -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(
+                "Remind me",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LEAD_TIME_OPTIONS.forEach { (label, days) ->
+                    LeadTimeChip(
+                        label = label,
+                        selected = selected == days,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSelect(days) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeadTimeChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    val fg = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(bg)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = fg)
     }
 }
 

@@ -1,7 +1,9 @@
 package com.example.mainactivity.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -16,6 +18,8 @@ class SessionManager(private val context: Context) {
 
     private val userIdKey = longPreferencesKey("current_user_id")
     private val themeModeKey = stringPreferencesKey("theme_mode")
+    private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
+    private val notifyDaysBeforeKey = intPreferencesKey("notify_days_before")
 
     val currentUserId: Flow<Long?> = context.dataStore.data.map { prefs ->
         prefs[userIdKey].takeIf { it != null && it > 0 }
@@ -29,8 +33,24 @@ class SessionManager(private val context: Context) {
         }
     }
 
+    val notificationsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[notificationsEnabledKey] ?: true
+    }
+
+    val notifyDaysBefore: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[notifyDaysBeforeKey] ?: 1
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[themeModeKey] = mode.name }
+    }
+
+    suspend fun setNotificationsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[notificationsEnabledKey] = enabled }
+    }
+
+    suspend fun setNotifyDaysBefore(days: Int) {
+        context.dataStore.edit { it[notifyDaysBeforeKey] = days }
     }
 
     suspend fun signIn(userId: Long) {
