@@ -40,7 +40,7 @@ public class BirthdayModel {
         this.id = id;
     }
 
-    public String getFamilieId() {
+    public String getFamilyId() {
         return familieId;
     }
 

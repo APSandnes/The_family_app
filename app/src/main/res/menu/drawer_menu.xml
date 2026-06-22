@@ -3,40 +3,40 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <group>
         <item
-            android:id="@+id/kalenderFragment"
+            android:id="@+id/calendarFragment"
             android:icon="@drawable/ic_action_calendar"
-            android:title="@string/kalender" />
+            android:title="@string/calendar" />
         <item
-            android:id="@+id/bursdagFragment"
+            android:id="@+id/birthdayFragment"
             android:icon="@drawable/ic_action_birthday"
             android:title="@string/birthdays" />
         <item
-            android:id="@+id/matplanFragment"
+            android:id="@+id/meal_planFragment"
             android:icon="@drawable/ic_action_food"
-            android:title="@string/matplan" />
+            android:title="@string/meal_plan" />
         <item
-            android:id="@+id/handlelisteFragment"
+            android:id="@+id/shopping_listFragment"
             android:icon="@drawable/ic_action_shopping"
-            android:title="@string/Handleliste" />
+            android:title="@string/ShoppingList" />
         <item
-            android:id="@+id/onskelisteFragment"
+            android:id="@+id/wishlistFragment"
             android:icon="@drawable/ic_action_list"
-            android:title="@string/oenskeliste" />
+            android:title="@string/oenskelist" />
         <item
-            android:id="@+id/familieboblaFragment"
+            android:id="@+id/family_bubbleFragment"
             android:icon="@drawable/ic_action_chat"
-            android:title="@string/familiebobla" />
+            android:title="@string/family_bubble" />
     </group>
 
     <item
         android:title="" >
         <menu>
             <item
-                android:id="@+id/profilFragment"
+                android:id="@+id/profileFragment"
                 android:icon="@drawable/ic_action_profile"
                 android:title="@string/profileNav" />
             <item
-                android:id="@+id/gruppeinformasjonFragment"
+                android:id="@+id/group_infoFragment"
                 android:icon="@drawable/ic_action_group"
                 android:title="@string/groupInfo" />
             <item
