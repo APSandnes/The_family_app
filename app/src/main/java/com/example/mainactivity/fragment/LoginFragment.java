@@ -67,7 +67,7 @@ public class LoginFragment extends Fragment {
         logo = view.findViewById(R.id.LoginLogo);
         logo.setImageResource(R.drawable.logo);
 
-        opprettBruker = view.findViewById(R.id.OpprettBruker);
+        opprettBruker = view.findViewById(R.id.CreateBruker);
         opprettBruker.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_loginFragment_to_signupFragment));
 
         password = view.findViewById(R.id.PasswordLogin);
