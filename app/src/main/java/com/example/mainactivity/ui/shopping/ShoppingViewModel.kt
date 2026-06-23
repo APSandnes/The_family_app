@@ -35,6 +35,12 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
                 if (userId != null) loadLists(userId) else _lists.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                loadLists(userId)
+            }
+        }
     }
 
     private suspend fun loadLists(userId: String) {

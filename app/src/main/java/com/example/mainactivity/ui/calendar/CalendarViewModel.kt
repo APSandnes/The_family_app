@@ -49,6 +49,12 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                 if (userId != null) loadEvents(userId) else _events.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                loadEvents(userId)
+            }
+        }
     }
 
     private suspend fun loadEvents(userId: String) {

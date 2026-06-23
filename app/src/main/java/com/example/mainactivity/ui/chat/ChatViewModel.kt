@@ -62,6 +62,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 if (userId != null) loadConversations(userId) else _conversations.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                loadConversations(userId)
+            }
+        }
     }
 
     private suspend fun loadConversations(userId: String) {

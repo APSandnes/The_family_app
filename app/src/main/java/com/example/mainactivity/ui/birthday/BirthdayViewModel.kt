@@ -28,6 +28,12 @@ class BirthdayViewModel(app: Application) : AndroidViewModel(app) {
                 if (userId != null) load(userId) else _birthdays.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                load(userId)
+            }
+        }
     }
 
     private suspend fun load(userId: String) {
