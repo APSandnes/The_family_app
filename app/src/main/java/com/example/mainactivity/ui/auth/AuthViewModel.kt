@@ -32,7 +32,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
             _state.update {
                 result.fold(
                     onSuccess = { AuthUiState(success = true) },
-                    onFailure = { e -> AuthUiState(error = e.message ?: "Sign in failed") }
+                    onFailure = { e -> AuthUiState(error = friendlyAuthError(e)) }
                 )
             }
         }
@@ -50,7 +50,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
             _state.update {
                 result.fold(
                     onSuccess = { AuthUiState(success = true) },
-                    onFailure = { e -> AuthUiState(error = e.message ?: "Registration failed") }
+                    onFailure = { e -> AuthUiState(error = friendlyAuthError(e)) }
                 )
             }
         }
@@ -67,4 +67,18 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun fail(message: String) = _state.update { it.copy(loading = false, error = message) }
+}
+
+private fun friendlyAuthError(e: Throwable): String {
+    val raw = e.message?.lowercase() ?: return "Something went wrong. Please try again."
+    return when {
+        "email not confirmed" in raw -> "Please confirm your email before signing in. Check your inbox (and spam folder)."
+        "invalid login credentials" in raw || "invalid_credentials" in raw -> "Incorrect email or password."
+        "user already registered" in raw || "already been registered" in raw -> "An account with this email already exists."
+        "email address is invalid" in raw -> "Please enter a valid email address."
+        "password should be at least" in raw || "weak_password" in raw -> "Password must be at least 6 characters."
+        "rate limit" in raw || "too many requests" in raw -> "Too many attempts. Please wait a moment and try again."
+        "network" in raw || "unable to resolve" in raw || "connect" in raw -> "Network error. Please check your connection."
+        else -> "Sign in failed. Please try again."
+    }
 }
