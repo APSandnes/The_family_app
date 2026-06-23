@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -80,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mainactivity.data.MessageModel
+import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.LoadingState
 import com.example.mainactivity.ui.components.FeatureTopBar
@@ -164,6 +167,7 @@ fun ConversationScreen(
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val myId by viewModel.currentUserId.collectAsStateWithLifecycle(null)
     val replyTo by viewModel.replyTo.collectAsStateWithLifecycle()
+    val userProfiles by viewModel.userProfiles.collectAsStateWithLifecycle()
     var draft by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
@@ -321,10 +325,14 @@ fun ConversationScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    items(messages, key = { it.id }) { msg ->
+                    itemsIndexed(messages, key = { _, msg -> msg.id }) { index, msg ->
                         val mine = msg.userFrom == myId
+                        val prevFrom = if (index > 0) messages[index - 1].userFrom else null
+                        val nextFrom = if (index < messages.lastIndex) messages[index + 1].userFrom else null
+                        val isFirstInGroup = prevFrom != msg.userFrom
+                        val isLastInGroup = nextFrom != msg.userFrom
                         val timeLabel = remember(msg.sentAt) {
                             runCatching {
                                 java.time.OffsetDateTime.parse(msg.sentAt)
@@ -336,6 +344,9 @@ fun ConversationScreen(
                             mine = mine,
                             myId = myId,
                             timeLabel = timeLabel,
+                            isFirstInGroup = isFirstInGroup,
+                            isLastInGroup = isLastInGroup,
+                            senderProfile = if (!mine) userProfiles[msg.userFrom] else null,
                             messages = messages,
                             onReply = { viewModel.setReplyTo(msg) }
                         )
@@ -398,53 +409,127 @@ private fun MessageRow(
     mine: Boolean,
     myId: String?,
     timeLabel: String,
+    isFirstInGroup: Boolean,
+    isLastInGroup: Boolean,
+    senderProfile: UserModel?,
     messages: List<MessageModel>,
     onReply: () -> Unit
 ) {
+    var showTime by remember { mutableStateOf(false) }
+
     SwipeToReplyWrapper(onReply = onReply) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = if (mine) Alignment.End else Alignment.Start
-        ) {
-            Surface(
-                shape = RoundedCornerShape(
-                    topStart = 18.dp, topEnd = 18.dp,
-                    bottomStart = if (mine) 18.dp else 4.dp,
-                    bottomEnd = if (mine) 4.dp else 18.dp
-                ),
-                color = if (mine) Color.Transparent else MaterialTheme.colorScheme.surface,
-                modifier = Modifier.widthIn(max = 280.dp)
+        if (mine) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = if (isFirstInGroup) 6.dp else 0.dp)
+                    .pointerInput(Unit) { detectTapGestures(onTap = { showTime = !showTime }) },
+                horizontalAlignment = Alignment.End
             ) {
-                Box(Modifier.then(if (mine) Modifier.background(BrandGradient) else Modifier)) {
-                    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                        if (msg.replyToId != null) {
-                            val quoted = messages.find { it.id == msg.replyToId }
-                            if (quoted != null) {
-                                QuoteBubble(
-                                    text = quoted.text,
-                                    isQuotedMine = quoted.userFrom == myId,
-                                    isMine = mine
-                                )
-                                Spacer(Modifier.height(6.dp))
-                            }
-                        }
+                Surface(
+                    shape = RoundedCornerShape(
+                        topStart = 18.dp, topEnd = 18.dp,
+                        bottomStart = 18.dp,
+                        bottomEnd = if (isLastInGroup) 4.dp else 18.dp
+                    ),
+                    color = Color.Transparent,
+                    modifier = Modifier.widthIn(max = 280.dp)
+                ) {
+                    Box(Modifier.background(BrandGradient)) {
+                        MessageContent(msg, mine = true, myId = myId, messages = messages)
+                    }
+                }
+                if (showTime && timeLabel.isNotEmpty()) {
+                    Text(
+                        timeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp, end = 4.dp)
+                    )
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = if (isFirstInGroup) 6.dp else 0.dp)
+                    .pointerInput(Unit) { detectTapGestures(onTap = { showTime = !showTime }) },
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // Avatar slot — always 36dp wide to keep bubbles left-aligned
+                if (isLastInGroup) {
+                    val avatarName = senderProfile?.name?.ifBlank { "?" } ?: "?"
+                    val avatarColor = Color(
+                        senderProfile?.avatarColor?.takeIf { it != 0 } ?: 0xFF6366F1.toInt()
+                    )
+                    InitialAvatar(
+                        name = avatarName,
+                        color = avatarColor,
+                        size = 36,
+                        avatarUri = senderProfile?.avatarUrl
+                    )
+                } else {
+                    Spacer(Modifier.size(36.dp))
+                }
+                Spacer(Modifier.width(6.dp))
+                Column(Modifier.widthIn(max = 280.dp)) {
+                    if (isFirstInGroup && senderProfile?.name != null) {
                         Text(
-                            msg.text,
-                            color = if (mine) Color.White else MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge
+                            senderProfile.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(
+                            topStart = 18.dp, topEnd = 18.dp,
+                            bottomStart = if (isLastInGroup) 4.dp else 18.dp,
+                            bottomEnd = 18.dp
+                        ),
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        MessageContent(msg, mine = false, myId = myId, messages = messages)
+                    }
+                    if (showTime && timeLabel.isNotEmpty()) {
+                        Text(
+                            timeLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp, start = 4.dp)
                         )
                     }
                 }
             }
-            if (timeLabel.isNotEmpty()) {
-                Text(
-                    timeLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp)
+        }
+    }
+}
+
+@Composable
+private fun MessageContent(
+    msg: MessageModel,
+    mine: Boolean,
+    myId: String?,
+    messages: List<MessageModel>
+) {
+    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        if (msg.replyToId != null) {
+            val quoted = messages.find { it.id == msg.replyToId }
+            if (quoted != null) {
+                QuoteBubble(
+                    text = quoted.text,
+                    isQuotedMine = quoted.userFrom == myId,
+                    isMine = mine
                 )
+                Spacer(Modifier.height(6.dp))
             }
         }
+        Text(
+            msg.text,
+            color = if (mine) Color.White else MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
 

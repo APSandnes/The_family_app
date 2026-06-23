@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mainactivity.data.ConversationModel
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.MessageModel
+import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.data.remote.SupabaseManager
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -54,6 +55,9 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _replyTo = MutableStateFlow<MessageModel?>(null)
     val replyTo: StateFlow<MessageModel?> = _replyTo.asStateFlow()
+
+    private val _userProfiles = MutableStateFlow<Map<String, UserModel>>(emptyMap())
+    val userProfiles: StateFlow<Map<String, UserModel>> = _userProfiles.asStateFlow()
 
     private var realtimeChannel: RealtimeChannel? = null
     private var pendingCameraConversationId: String = ""
@@ -101,6 +105,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             _messages.value = db.from("messages")
                 .select { filter { eq("conversation_id", conversationId) }; order("sent_at", Order.ASCENDING) }
                 .decodeList<MessageModel>()
+            val userId = repo.currentUserId.first()
+            val user = if (userId != null) repo.getUser(userId) else null
+            if (user?.familyId != null) {
+                val members = repo.getFamilyMembers(user.familyId)
+                _userProfiles.value = members.associateBy { it.id }
+            }
             subscribeToMessages(conversationId)
         }
     }

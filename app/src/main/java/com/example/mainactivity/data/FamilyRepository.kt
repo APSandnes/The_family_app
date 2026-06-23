@@ -40,6 +40,12 @@ class FamilyRepository(val session: SessionManager) {
             .firstOrNull()
     }.getOrNull()
 
+    suspend fun getFamilyMembers(familyId: String): List<UserModel> = runCatching {
+        SupabaseManager.client.postgrest.from("users")
+            .select { filter { eq("family_id", familyId) } }
+            .decodeList<UserModel>()
+    }.getOrDefault(emptyList())
+
     suspend fun getFamily(familyId: String): FamilyModel? = runCatching {
         SupabaseManager.client.postgrest.from("families")
             .select { filter { eq("id", familyId) } }
