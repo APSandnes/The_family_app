@@ -42,6 +42,13 @@ class MealViewModel(app: Application) : AndroidViewModel(app) {
                 } else _plans.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                val user = repo.getUser(userId)
+                if (user?.familyId != null) loadPlans(user.familyId) else _plans.value = emptyList()
+            }
+        }
     }
 
     private suspend fun loadPlans(familyId: String) {

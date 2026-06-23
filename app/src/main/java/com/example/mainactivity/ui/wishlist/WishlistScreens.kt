@@ -75,7 +75,7 @@ fun WishlistScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(wishlists, key = { it.id }) { wl ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteWishlist(wl) }) {
+                    SwipeToRevealDelete(onDelete = { viewModel.deleteWishlist(wl) }, shape = RoundedCornerShape(20.dp)) {
                         Surface(
                             onClick = { onOpen(wl.id) },
                             shape = RoundedCornerShape(20.dp),
@@ -136,7 +136,7 @@ fun WishlistDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(wishes, key = { it.id }) { wish ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteWish(wish) }) {
+                    SwipeToRevealDelete(onDelete = { viewModel.deleteWish(wish) }, shape = RoundedCornerShape(16.dp)) {
                         Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = { viewModel.toggle(wish) }) {

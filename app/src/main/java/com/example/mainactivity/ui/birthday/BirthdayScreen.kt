@@ -19,11 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,6 +44,7 @@ import com.example.mainactivity.ui.components.BirthdayPickerField
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
+import com.example.mainactivity.ui.components.SwipeToRevealDelete
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -90,7 +89,9 @@ fun BirthdayScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(sorted, key = { it.id }) { b ->
-                    BirthdayCard(b, today, onDelete = { viewModel.delete(b) })
+                    SwipeToRevealDelete(onDelete = { viewModel.delete(b) }, shape = RoundedCornerShape(20.dp)) {
+                        BirthdayCard(b, today)
+                    }
                 }
             }
         }
@@ -105,7 +106,7 @@ fun BirthdayScreen(
 }
 
 @Composable
-private fun BirthdayCard(b: BirthdayModel, today: LocalDate, onDelete: () -> Unit) {
+private fun BirthdayCard(b: BirthdayModel, today: LocalDate) {
     val nextDate = nextBirthdayDate(b.date, today)
     val age = turnsAge(b.date, today)
     val displayDate = if (nextDate != null) {
@@ -138,9 +139,6 @@ private fun BirthdayCard(b: BirthdayModel, today: LocalDate, onDelete: () -> Uni
                         )
                     }
                 }
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

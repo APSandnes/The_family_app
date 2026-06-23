@@ -11,6 +11,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
@@ -34,7 +35,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() = viewModelScope.launch {
-        val userId = _state.value.user?.id ?: return@launch
+        val userId = repo.currentUserId.first() ?: return@launch
         load(userId)
     }
 

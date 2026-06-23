@@ -49,6 +49,12 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                 if (userId != null) loadEvents(userId) else _events.value = emptyList()
             }
         }
+        viewModelScope.launch {
+            repo.familyChanged.collect {
+                val userId = repo.currentUserId.first() ?: return@collect
+                loadEvents(userId)
+            }
+        }
     }
 
     private suspend fun loadEvents(userId: String) {
@@ -58,10 +64,12 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                 db.from("calendar_events").select {
                     filter { or { eq("user_id", userId); eq("family_id", user.familyId) } }
                 }.decodeList<CalendarEventModel>()
+                    .filter { it.familyId == null || it.familyId == user.familyId }
             } else {
                 db.from("calendar_events").select {
                     filter { eq("user_id", userId) }
                 }.decodeList<CalendarEventModel>()
+                    .filter { it.familyId == null }
             }
         }
     }

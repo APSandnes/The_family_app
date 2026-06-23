@@ -9,11 +9,17 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class FamilyRepository(val session: SessionManager) {
+
+    private val _familyChanged = MutableSharedFlow<Unit>()
+    val familyChanged: SharedFlow<Unit> = _familyChanged.asSharedFlow()
 
     val currentUserId: Flow<String?> = session.currentUserId
     val themeMode: Flow<ThemeMode> = session.themeMode
@@ -119,7 +125,7 @@ class FamilyRepository(val session: SessionManager) {
             }) { filter { eq("id", userId) } }
             syncUserBirthday(userId, family.id)
             family.id
-        }
+        }.also { if (it.isSuccess) _familyChanged.emit(Unit) }
 
     suspend fun joinFamily(name: String, code: String, userId: String): Result<String> =
         runCatching {
@@ -134,7 +140,7 @@ class FamilyRepository(val session: SessionManager) {
             }) { filter { eq("id", userId) } }
             syncUserBirthday(userId, family.id)
             family.id
-        }
+        }.also { if (it.isSuccess) _familyChanged.emit(Unit) }
 
     private suspend fun syncUserBirthday(userId: String, familyId: String) {
         runCatching {
@@ -162,7 +168,7 @@ class FamilyRepository(val session: SessionManager) {
             SupabaseManager.client.postgrest.from("users").update({
                 set("family_id", null as String?)
             }) { filter { eq("id", userId) } }
-        }
+        }.onSuccess { _familyChanged.emit(Unit) }
     }
 
     suspend fun updateProfile(
