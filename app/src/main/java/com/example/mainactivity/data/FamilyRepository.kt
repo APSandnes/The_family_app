@@ -1,6 +1,8 @@
 package com.example.mainactivity.data
 
 import android.content.Context
+import com.example.mainactivity.data.remote.DEEP_LINK_HOST
+import com.example.mainactivity.data.remote.DEEP_LINK_SCHEME
 import com.example.mainactivity.data.remote.SupabaseManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -45,7 +47,10 @@ class FamilyRepository(val session: SessionManager) {
     ): Result<String> = runCatching {
         val client = SupabaseManager.client
         val emailNorm = email.trim().lowercase()
-        client.auth.signUpWith(Email) {
+        client.auth.signUpWith(
+            provider = Email,
+            redirectUrl = "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST"
+        ) {
             this.email = emailNorm
             this.password = password
             this.data = buildJsonObject {
