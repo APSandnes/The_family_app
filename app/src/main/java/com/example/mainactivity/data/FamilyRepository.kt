@@ -4,10 +4,12 @@ import android.content.Context
 import com.example.mainactivity.data.remote.DEEP_LINK_HOST
 import com.example.mainactivity.data.remote.DEEP_LINK_SCHEME
 import com.example.mainactivity.data.remote.SupabaseManager
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -17,6 +19,7 @@ class FamilyRepository(val session: SessionManager) {
     val themeMode: Flow<ThemeMode> = session.themeMode
     val notificationsEnabled: Flow<Boolean> = session.notificationsEnabled
     val notifyDaysBefore: Flow<Int> = session.notifyDaysBefore
+    val sessionStatusFlow: StateFlow<SessionStatus> get() = SupabaseManager.client.auth.sessionStatus
 
     suspend fun setThemeMode(mode: ThemeMode) = session.setThemeMode(mode)
     suspend fun setNotificationsEnabled(enabled: Boolean) = session.setNotificationsEnabled(enabled)
@@ -44,9 +47,11 @@ class FamilyRepository(val session: SessionManager) {
         password: String,
         birthday: String,
         mobile: String
-    ): Result<String> = runCatching {
+    ): Result<Unit> = runCatching {
         val client = SupabaseManager.client
         val emailNorm = email.trim().lowercase()
+        // Clear any stale session before signing up to avoid FK constraint from wrong auth_id
+        runCatching { client.auth.signOut() }
         client.auth.signUpWith(
             provider = Email,
             redirectUrl = "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST"
@@ -56,19 +61,23 @@ class FamilyRepository(val session: SessionManager) {
             this.data = buildJsonObject {
                 put("full_name", name.trim())
                 put("phone", mobile)
+                put("birthday", birthday)
+                put("avatar_color", palette(name))
             }
         }
+        // Profile is created automatically by the on_auth_user_created trigger.
+    }
+
+    suspend fun completeSignInAfterConfirmation(): Result<String> = runCatching {
+        val client = SupabaseManager.client
         val authId = client.auth.currentSessionOrNull()?.user?.id
-        val inserted = client.postgrest.from("users").insert(buildJsonObject {
-            if (authId != null) put("auth_id", authId)
-            put("name", name.trim())
-            put("email", emailNorm)
-            put("birthday", birthday)
-            put("mobile", mobile)
-            put("avatar_color", palette(name))
-        }) { select() }.decodeList<UserModel>().first()
-        session.signIn(inserted.id)
-        inserted.id
+            ?: error("No authenticated session")
+        val user = client.postgrest.from("users")
+            .select { filter { eq("auth_id", authId) } }
+            .decodeList<UserModel>()
+            .firstOrNull() ?: error("User profile not found")
+        session.signIn(user.id)
+        user.id
     }
 
     suspend fun login(email: String, password: String): Result<String> = runCatching {

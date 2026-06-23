@@ -1,6 +1,8 @@
 package com.example.mainactivity.ui.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,17 +14,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Diversity3
+import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,7 +57,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.PrimaryButton
+import com.example.mainactivity.ui.components.SecondaryButton
 import com.example.mainactivity.ui.theme.heroGradient
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun LoginScreen(
@@ -86,38 +104,267 @@ fun RegisterScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var step by rememberSaveable { mutableStateOf(1) }
+
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var mobile by rememberSaveable { mutableStateOf("") }
-    var birthday by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirm by rememberSaveable { mutableStateOf("") }
+    var birthday by rememberSaveable { mutableStateOf("") }
+    var mobile by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(state.pendingConfirmation) { if (state.pendingConfirmation) step = 3 }
     LaunchedEffect(state.success) { if (state.success) onAuthenticated() }
+    BackHandler(enabled = step == 2) { step = 1; viewModel.clearError() }
 
-    AuthScaffold(
-        title = "Create your account",
-        subtitle = "Bring everyone together in one calm, shared space."
-    ) {
-        ErrorBanner(state.error)
-        FamilyTextField(name, { name = it; viewModel.clearError() }, "Full name")
-        FamilyTextField(email, { email = it; viewModel.clearError() }, "Email", leadingIcon = Icons.Outlined.Mail, keyboardType = KeyboardType.Email)
-        FamilyTextField(mobile, { mobile = it }, "Mobile (optional)", keyboardType = KeyboardType.Phone)
-        FamilyTextField(birthday, { birthday = it }, "Birthday (optional)")
-        FamilyTextField(password, { password = it; viewModel.clearError() }, "Password", leadingIcon = Icons.Outlined.Lock, isPassword = true)
-        FamilyTextField(confirm, { confirm = it; viewModel.clearError() }, "Confirm password", leadingIcon = Icons.Outlined.Lock, isPassword = true)
+    val (title, subtitle) = when (step) {
+        1 -> "Create your account" to "Start with your login details."
+        2 -> "About you" to "Optional details to help your family recognize you."
+        else -> "Check your inbox" to "One last step — confirm your email."
+    }
+
+    AuthScaffold(title = title, subtitle = subtitle) {
+        StepIndicator(currentStep = step)
         Spacer(Modifier.height(4.dp))
-        PrimaryButton(
-            text = "Create account",
-            onClick = { viewModel.register(name, email, password, confirm, birthday, mobile) },
-            loading = state.loading,
+        ErrorBanner(state.error)
+        when (step) {
+            1 -> RegistrationStep1(
+                name = name, onNameChange = { name = it; viewModel.clearError() },
+                email = email, onEmailChange = { email = it; viewModel.clearError() },
+                password = password, onPasswordChange = { password = it; viewModel.clearError() },
+                confirm = confirm, onConfirmChange = { confirm = it; viewModel.clearError() },
+                onNext = {
+                    when {
+                        name.isBlank() -> viewModel.setError("Please enter your name.")
+                        !email.contains('@') || !email.contains('.') -> viewModel.setError("Please enter a valid email address.")
+                        password.length < 6 -> viewModel.setError("Password must be at least 6 characters.")
+                        password != confirm -> viewModel.setError("Passwords do not match.")
+                        else -> { viewModel.clearError(); step = 2 }
+                    }
+                }
+            )
+            2 -> RegistrationStep2(
+                birthday = birthday, onBirthdayChange = { birthday = it },
+                mobile = mobile, onMobileChange = { mobile = it },
+                loading = state.loading,
+                onBack = { step = 1; viewModel.clearError() },
+                onSubmit = { viewModel.register(name, email, password, confirm, birthday, mobile) }
+            )
+            3 -> RegistrationStep3(
+                email = state.pendingEmail,
+                loading = state.loading,
+                onConfirm = { viewModel.login(email, password) }
+            )
+        }
+        if (step == 1) {
+            AuthFooter(
+                prompt = "Already have an account?",
+                action = "Sign in",
+                onClick = onNavigateToLogin
+            )
+        }
+    }
+}
+
+@Composable
+private fun StepIndicator(currentStep: Int, totalSteps: Int = 3) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 1..totalSteps) {
+            val isActive = i == currentStep
+            val isCompleted = i < currentStep
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isActive || isCompleted) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    i.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isActive || isCompleted) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (i < totalSteps) {
+                Box(
+                    modifier = Modifier
+                        .width(44.dp)
+                        .height(2.dp)
+                        .background(
+                            if (i < currentStep) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outlineVariant
+                        )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegistrationStep1(
+    name: String, onNameChange: (String) -> Unit,
+    email: String, onEmailChange: (String) -> Unit,
+    password: String, onPasswordChange: (String) -> Unit,
+    confirm: String, onConfirmChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    FamilyTextField(name, onNameChange, "Full name", leadingIcon = Icons.Outlined.Person)
+    FamilyTextField(email, onEmailChange, "Email", leadingIcon = Icons.Outlined.Mail, keyboardType = KeyboardType.Email)
+    FamilyTextField(password, onPasswordChange, "Password", leadingIcon = Icons.Outlined.Lock, isPassword = true)
+    FamilyTextField(confirm, onConfirmChange, "Confirm password", leadingIcon = Icons.Outlined.Lock, isPassword = true)
+    Spacer(Modifier.height(4.dp))
+    PrimaryButton(
+        text = "Continue",
+        onClick = onNext,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RegistrationStep2(
+    birthday: String, onBirthdayChange: (String) -> Unit,
+    mobile: String, onMobileChange: (String) -> Unit,
+    loading: Boolean,
+    onBack: () -> Unit,
+    onSubmit: () -> Unit
+) {
+    BirthdayPickerField(value = birthday, onChange = onBirthdayChange)
+    FamilyTextField(mobile, onMobileChange, "Mobile (optional)", leadingIcon = Icons.Outlined.Phone, keyboardType = KeyboardType.Phone)
+    Spacer(Modifier.height(4.dp))
+    PrimaryButton(
+        text = "Create account",
+        onClick = onSubmit,
+        loading = loading,
+        modifier = Modifier.fillMaxWidth()
+    )
+    SecondaryButton(
+        text = "Back",
+        onClick = onBack,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun RegistrationStep3(
+    email: String,
+    loading: Boolean,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Spacer(Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Outlined.Mail,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+        if (email.isNotEmpty()) {
+            Text(
+                "We sent a link to",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                email,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Text(
+            "Click the link to confirm your account. Check your spam folder if you don't see it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
-        AuthFooter(
-            prompt = "Already have an account?",
-            action = "Sign in",
-            onClick = onNavigateToLogin
+        Spacer(Modifier.height(4.dp))
+        PrimaryButton(
+            text = "I've confirmed my email",
+            onClick = onConfirm,
+            loading = loading,
+            modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BirthdayPickerField(value: String, onChange: (String) -> Unit) {
+    var showPicker by remember { mutableStateOf(false) }
+    val thirtyYearsAgo = System.currentTimeMillis() - 30L * 365 * 24 * 60 * 60 * 1000
+    val pickerState = rememberDatePickerState(initialSelectedDateMillis = thirtyYearsAgo)
+
+    val displayText = if (value.isNotEmpty()) {
+        runCatching {
+            java.time.LocalDate.parse(value)
+                .format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
+        }.getOrDefault(value)
+    } else ""
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = displayText,
+            onValueChange = {},
+            label = { Text("Birthday (optional)") },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Outlined.Cake, contentDescription = null) },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
+        )
+        Box(modifier = Modifier.matchParentSize().clickable { showPicker = true })
+    }
+
+    if (showPicker) {
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                        onChange(date.toString())
+                    }
+                    showPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
     }
 }
 
@@ -147,7 +394,7 @@ private fun AuthScaffold(
                     .background(Color.White.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Icon(
+                Icon(
                     Icons.Filled.Diversity3,
                     contentDescription = null,
                     tint = Color.White,
@@ -188,7 +435,7 @@ private fun AuthFooter(prompt: String, action: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(prompt, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        androidx.compose.material3.TextButton(onClick = onClick) {
+        TextButton(onClick = onClick) {
             Text(action, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         }
     }
