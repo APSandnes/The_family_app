@@ -98,7 +98,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 ?: error("No auth session")
             val bucket = SupabaseManager.client.storage.from("avatars")
             bucket.upload("$authId/avatar.jpg", bytes) { upsert = true }
-            val url = bucket.publicUrl("$authId/avatar.jpg")
+            val url = bucket.publicUrl("$authId/avatar.jpg") + "?t=${System.currentTimeMillis()}"
             repo.updateProfile(userId, current.name, current.email, current.birthday, current.mobile, url)
             _user.value = current.copy(avatarUrl = url)
         }.onFailure { e ->
