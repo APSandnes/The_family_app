@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
@@ -89,13 +90,17 @@ fun HomeScreen(
         Feature("Family Map", "See where everyone is", Icons.Filled.Map, Color(0xFF10B981), "family_map")
     )
 
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val columns = if (screenWidthDp >= 600) 3 else 2
-    // Tiles get shorter as the screen gets wider so all 6 fit without scrolling on tablets
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+    // Portrait=2 cols, landscape=3 cols on all form factors
+    val columns = if (isLandscape) 3 else 2
+    // Tiles must be shorter on larger screens so all 6 fit without scrolling
     val tileAspectRatio = when {
-        screenWidthDp >= 840 -> 1.7f   // tablet landscape
-        screenWidthDp >= 600 -> 1.35f  // tablet portrait / large phone landscape
-        else -> 1.05f                  // phone portrait
+        isLandscape && isTablet -> 2.2f  // tablet landscape: very wide tiles
+        isLandscape            -> 1.5f  // phone landscape
+        isTablet               -> 1.4f  // tablet portrait: wide tiles, 3 rows fit
+        else                   -> 1.05f // phone portrait
     }
 
     LazyVerticalGrid(
@@ -191,7 +196,7 @@ private fun FeatureTile(feature: Feature, aspectRatio: Float, onClick: () -> Uni
         tonalElevation = 1.dp,
         shadowElevation = 2.dp
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
                 Modifier.size(48.dp).clip(RoundedCornerShape(16.dp))
                     .background(Brush.linearGradient(listOf(feature.color, feature.color.copy(alpha = 0.7f)))),
@@ -199,7 +204,7 @@ private fun FeatureTile(feature: Feature, aspectRatio: Float, onClick: () -> Uni
             ) {
                 Icon(feature.icon, null, tint = Color.White, modifier = Modifier.size(26.dp))
             }
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(feature.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                 Text(feature.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
