@@ -1,16 +1,13 @@
 package com.example.mainactivity.data
 
 import android.content.Context
-import java.security.MessageDigest
+import com.example.mainactivity.data.remote.SupabaseManager
+import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 
-/**
- * Single entry point to all persistence. Hashes credentials before storage as outlined
- * in the system design document (server-side hashing of user secrets).
- */
 class FamilyRepository(
     private val db: AppDatabase,
     val session: SessionManager
@@ -25,7 +22,6 @@ class FamilyRepository(
     val chatDao get() = db.chatDao()
 
     val currentUserId: Flow<Long?> = session.currentUserId
-
     val themeMode: Flow<ThemeMode> = session.themeMode
     val notificationsEnabled: Flow<Boolean> = session.notificationsEnabled
     val notifyDaysBefore: Flow<Int> = session.notifyDaysBefore
@@ -46,43 +42,72 @@ class FamilyRepository(
     }
 
     // ---- Auth ----
+
     suspend fun register(
         name: String,
         email: String,
         password: String,
         birthday: String,
         mobile: String
-    ): Result<Long> {
-        if (userDao.countByEmail(email.trim().lowercase()) > 0) {
-            return Result.failure(IllegalStateException("An account with that email already exists."))
+    ): Result<Long> = runCatching {
+        val client = SupabaseManager.client
+        val emailNorm = email.trim().lowercase()
+        client.auth.signUpWith(Email) {
+            this.email = emailNorm
+            this.password = password
         }
-        val id = userDao.insert(
-            UserEntity(
+        val supabaseSession = client.auth.currentSessionOrNull()
+        val supabaseId = supabaseSession?.user?.id
+        val localId = if (userDao.countByEmail(emailNorm) > 0) {
+            userDao.findByEmail(emailNorm)!!.id
+        } else {
+            userDao.insert(UserEntity(
                 name = name.trim(),
-                email = email.trim().lowercase(),
-                password = hash(password),
+                email = emailNorm,
+                password = "",
                 birthday = birthday,
                 mobile = mobile,
-                avatarColor = palette(name)
-            )
-        )
-        session.signIn(id)
-        return Result.success(id)
-    }
-
-    suspend fun login(email: String, password: String): Result<Long> {
-        val user = userDao.findByEmail(email.trim().lowercase())
-            ?: return Result.failure(IllegalStateException("No account found for that email."))
-        if (user.password != hash(password)) {
-            return Result.failure(IllegalStateException("Incorrect password."))
+                avatarColor = palette(name),
+                supabaseId = supabaseId
+            ))
         }
-        session.signIn(user.id)
-        return Result.success(user.id)
+        supabaseSession?.accessToken?.let { session.setSupabaseToken(it) }
+        session.signIn(localId)
+        localId
     }
 
-    suspend fun signOut() = session.signOut()
+    suspend fun login(email: String, password: String): Result<Long> = runCatching {
+        val client = SupabaseManager.client
+        val emailNorm = email.trim().lowercase()
+        client.auth.signInWith(Email) {
+            this.email = emailNorm
+            this.password = password
+        }
+        val supabaseSession = client.auth.currentSessionOrNull()
+        val supabaseId = supabaseSession?.user?.id
+        val localUser = userDao.findByEmail(emailNorm) ?: run {
+            val newId = userDao.insert(UserEntity(
+                name = emailNorm.substringBefore("@"),
+                email = emailNorm,
+                password = "",
+                avatarColor = palette(emailNorm),
+                supabaseId = supabaseId
+            ))
+            userDao.findById(newId)!!
+        }
+        supabaseSession?.accessToken?.let { session.setSupabaseToken(it) }
+        session.signIn(localUser.id)
+        localUser.id
+    }
+
+    suspend fun signOut() {
+        runCatching { SupabaseManager.client.auth.signOut() }
+        session.clearSupabaseToken()
+        session.signOut()
+    }
 
     // ---- Family ----
+
     suspend fun createFamily(name: String, password: String, userId: Long): Long {
         val familyId = familyDao.insert(FamilyEntity(name = name.trim(), password = password, adminId = userId))
         userDao.findById(userId)?.let { userDao.update(it.copy(familyId = familyId)) }
@@ -112,11 +137,6 @@ class FamilyRepository(
                     SessionManager(context.applicationContext)
                 ).also { INSTANCE = it }
             }
-
-        fun hash(value: String): String =
-            MessageDigest.getInstance("SHA-256")
-                .digest(value.toByteArray())
-                .joinToString("") { "%02x".format(it) }
 
         private val avatarColors = intArrayOf(
             0xFF6366F1.toInt(), 0xFFEC4899.toInt(), 0xFF14B8A6.toInt(),

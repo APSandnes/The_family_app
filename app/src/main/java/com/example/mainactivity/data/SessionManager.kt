@@ -20,6 +20,7 @@ class SessionManager(private val context: Context) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
     private val notifyDaysBeforeKey = intPreferencesKey("notify_days_before")
+    private val supabaseTokenKey = stringPreferencesKey("supabase_token")
 
     val currentUserId: Flow<Long?> = context.dataStore.data.map { prefs ->
         prefs[userIdKey].takeIf { it != null && it > 0 }
@@ -41,6 +42,10 @@ class SessionManager(private val context: Context) {
         prefs[notifyDaysBeforeKey] ?: 1
     }
 
+    val supabaseToken: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[supabaseTokenKey]
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[themeModeKey] = mode.name }
     }
@@ -51,6 +56,14 @@ class SessionManager(private val context: Context) {
 
     suspend fun setNotifyDaysBefore(days: Int) {
         context.dataStore.edit { it[notifyDaysBeforeKey] = days }
+    }
+
+    suspend fun setSupabaseToken(token: String) {
+        context.dataStore.edit { it[supabaseTokenKey] = token }
+    }
+
+    suspend fun clearSupabaseToken() {
+        context.dataStore.edit { it.remove(supabaseTokenKey) }
     }
 
     suspend fun signIn(userId: Long) {
