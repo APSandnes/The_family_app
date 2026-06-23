@@ -15,13 +15,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Checkbox
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -78,7 +79,7 @@ fun ShoppingScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(lists, key = { it.id }) { list ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteList(list) }) {
+                    SwipeToRevealDelete(onDelete = { viewModel.deleteList(list) }, shape = RoundedCornerShape(20.dp)) {
                         Surface(
                             onClick = { onOpenList(list.id) },
                             shape = RoundedCornerShape(20.dp),
@@ -176,14 +177,20 @@ fun ShoppingDetailScreen(
 
 @Composable
 private fun ShoppingItemRow(item: ShoppingItemModel, viewModel: ShoppingViewModel) {
-    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }) {
+    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }, shape = RoundedCornerShape(16.dp)) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = item.checked, onCheckedChange = { viewModel.toggle(item) })
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { viewModel.toggle(item) }) {
+                    Icon(
+                        if (item.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                        null,
+                        tint = if (item.checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     item.item,
                     Modifier.weight(1f),

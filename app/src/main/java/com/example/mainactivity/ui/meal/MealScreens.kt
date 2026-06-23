@@ -16,12 +16,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -40,6 +38,7 @@ import com.example.mainactivity.data.MealPlanDayModel
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
+import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
 @Composable
 fun MealScreen(
@@ -73,24 +72,23 @@ fun MealScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(plans, key = { it.id }) { plan ->
-                    Surface(
-                        onClick = { onOpen(plan.id) },
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 2.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Restaurant, null, tint = MaterialTheme.colorScheme.tertiary)
-                            Spacer(Modifier.size(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Week ${plan.week}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Text("${plan.fromDate} – ${plan.toDate}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    SwipeToRevealDelete(onDelete = { viewModel.deletePlan(plan) }, shape = RoundedCornerShape(20.dp)) {
+                        Surface(
+                            onClick = { onOpen(plan.id) },
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Restaurant, null, tint = MaterialTheme.colorScheme.tertiary)
+                                Spacer(Modifier.size(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Week ${plan.week}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("${plan.fromDate} – ${plan.toDate}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            IconButton(onClick = { viewModel.deletePlan(plan) }) {
-                                Icon(Icons.Filled.Delete, "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

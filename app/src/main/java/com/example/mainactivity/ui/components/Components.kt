@@ -63,8 +63,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -375,6 +376,7 @@ fun BirthdayPickerField(value: String, onChange: (String) -> Unit) {
 fun SwipeToRevealDelete(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -384,7 +386,7 @@ fun SwipeToRevealDelete(
     val revealWidthDp = 80.dp
     val revealPx = remember(density) { with(density) { revealWidthDp.toPx() } }
 
-    Box(modifier.fillMaxWidth().clipToBounds()) {
+    Box(modifier.fillMaxWidth().clip(shape)) {
         // Red delete panel — behind the sliding content
         Row(Modifier.matchParentSize(), horizontalArrangement = Arrangement.End) {
             Box(
