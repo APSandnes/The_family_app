@@ -39,9 +39,16 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun loadLists(userId: String) {
         runCatching {
-            _lists.value = db.from("shopping_lists")
-                .select { filter { eq("owner_user_id", userId) } }
-                .decodeList<ShoppingListModel>()
+            val user = repo.getUser(userId)
+            _lists.value = if (user?.familyId != null) {
+                db.from("shopping_lists")
+                    .select { filter { or { eq("owner_user_id", userId); eq("family_id", user.familyId) } } }
+                    .decodeList<ShoppingListModel>()
+            } else {
+                db.from("shopping_lists")
+                    .select { filter { eq("owner_user_id", userId) } }
+                    .decodeList<ShoppingListModel>()
+            }
         }
     }
 
@@ -59,10 +66,12 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addList(title: String) = viewModelScope.launch {
         val userId = repo.currentUserId.first() ?: return@launch
+        val user = repo.getUser(userId)
         runCatching {
             db.from("shopping_lists").insert(buildJsonObject {
                 put("title", title)
                 put("owner_user_id", userId)
+                if (user?.familyId != null) put("family_id", user.familyId)
             })
         }
         loadLists(userId)

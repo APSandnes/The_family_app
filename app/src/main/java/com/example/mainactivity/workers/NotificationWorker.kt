@@ -173,11 +173,14 @@ class NotificationWorker(
 private val DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
 fun daysUntilRecurring(dateStr: String, today: LocalDate): Int? {
-    val monthDay = try {
+    val monthDay = runCatching {
+        val d = LocalDate.parse(dateStr.trim())
+        MonthDay.of(d.month, d.dayOfMonth)
+    }.getOrNull() ?: runCatching {
         MonthDay.parse(dateStr.trim(), DATE_FORMATTER)
-    } catch (_: Exception) { return null }
+    }.getOrNull() ?: return null
     var target = monthDay.atYear(today.year)
-    if (target < today.minusDays(1)) target = monthDay.atYear(today.year + 1)
+    if (target < today) target = monthDay.atYear(today.year + 1)
     return ChronoUnit.DAYS.between(today, target).toInt()
 }
 

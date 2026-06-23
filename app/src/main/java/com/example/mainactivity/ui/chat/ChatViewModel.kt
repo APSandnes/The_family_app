@@ -62,9 +62,16 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun loadConversations(userId: String) {
         runCatching {
-            _conversations.value = db.from("conversations")
-                .select { filter { eq("user_from", userId) } }
-                .decodeList<ConversationModel>()
+            val user = repo.getUser(userId)
+            _conversations.value = if (user?.familyId != null) {
+                db.from("conversations")
+                    .select { filter { or { eq("user_from", userId); eq("family_id", user.familyId) } } }
+                    .decodeList<ConversationModel>()
+            } else {
+                db.from("conversations")
+                    .select { filter { eq("user_from", userId) } }
+                    .decodeList<ConversationModel>()
+            }
         }
     }
 
