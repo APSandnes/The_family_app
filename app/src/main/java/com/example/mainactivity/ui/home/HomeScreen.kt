@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -88,8 +89,17 @@ fun HomeScreen(
         Feature("Family Map", "See where everyone is", Icons.Filled.Map, Color(0xFF10B981), "family_map")
     )
 
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val columns = if (screenWidthDp >= 600) 3 else 2
+    // Tiles get shorter as the screen gets wider so all 6 fit without scrolling on tablets
+    val tileAspectRatio = when {
+        screenWidthDp >= 840 -> 1.7f   // tablet landscape
+        screenWidthDp >= 600 -> 1.35f  // tablet portrait / large phone landscape
+        else -> 1.05f                  // phone portrait
+    }
+
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(),
         contentPadding = PaddingValues(20.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -122,7 +132,7 @@ fun HomeScreen(
             }
         }
         items(features) { feature ->
-            FeatureTile(feature, onClick = { onOpen(feature.route) })
+            FeatureTile(feature, aspectRatio = tileAspectRatio, onClick = { onOpen(feature.route) })
         }
     }
 }
@@ -172,10 +182,10 @@ private fun FamilyCard(
 }
 
 @Composable
-private fun FeatureTile(feature: Feature, onClick: () -> Unit) {
+private fun FeatureTile(feature: Feature, aspectRatio: Float, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().aspectRatio(1.05f),
+        modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
