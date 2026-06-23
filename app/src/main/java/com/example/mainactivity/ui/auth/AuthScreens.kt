@@ -2,7 +2,6 @@ package com.example.mainactivity.ui.auth
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -316,20 +315,24 @@ private fun AuthScaffold(
     Box(
         Modifier
             .fillMaxSize()
-            .background(heroGradient(dark))
+            .background(heroGradient(dark)),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(Modifier.height(64.dp))
+            // Brand header
             Box(
                 Modifier
                     .size(72.dp)
                     .clip(RoundedCornerShape(22.dp))
-                    .background(Color.White.copy(alpha = 0.16f)),
+                    .background(Color.White.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -339,26 +342,47 @@ private fun AuthScaffold(
                     modifier = Modifier.size(38.dp)
                 )
             }
-            Spacer(Modifier.height(16.dp))
-            Text("The Family App", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("One home for everything you share", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "The Family App",
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "One home for everything you share",
+                color = Color.White.copy(alpha = 0.80f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.height(32.dp))
+
+            // Form card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                color = MaterialTheme.colorScheme.background
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 4.dp,
+                tonalElevation = 2.dp
             ) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 28.dp),
+                        .padding(horizontal = 28.dp, vertical = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
-                    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
                     content()
-                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
