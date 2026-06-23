@@ -60,6 +60,8 @@ import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.PrimaryButton
 import com.example.mainactivity.ui.theme.heroGradient
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProfileScreen(
@@ -151,7 +153,7 @@ fun ProfileScreen(
                 Column(Modifier.padding(6.dp)) {
                     InfoRow(Icons.Filled.Mail, "Email", user?.email.orEmpty().ifBlank { "—" })
                     InfoRow(Icons.Filled.Phone, "Mobile", user?.mobile.orEmpty().ifBlank { "—" })
-                    InfoRow(Icons.Filled.Cake, "Birthday", user?.birthday.orEmpty().ifBlank { "—" })
+                    InfoRow(Icons.Filled.Cake, "Birthday", formatBirthday(user?.birthday))
                 }
             }
 
@@ -227,6 +229,13 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
     }
+}
+
+private fun formatBirthday(raw: String?): String {
+    if (raw.isNullOrBlank()) return "—"
+    return runCatching {
+        LocalDate.parse(raw).format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
+    }.getOrElse { raw }
 }
 
 @Composable
