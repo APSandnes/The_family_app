@@ -161,7 +161,7 @@ private fun AddBirthdayDialog(onDismiss: () -> Unit, onConfirm: (String, String)
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (name.isNotBlank()) onConfirm(name.trim(), date) }) {
+            TextButton(onClick = { if (name.isNotBlank() && date.isNotBlank()) onConfirm(name.trim(), date) }) {
                 Text("Add")
             }
         },
