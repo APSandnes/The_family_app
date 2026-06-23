@@ -1,5 +1,10 @@
 package com.example.mainactivity.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -141,18 +146,54 @@ private fun MainFlow() {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            // Default: iOS-style horizontal slide for detail/feature screens
+            enterTransition = { slideInHorizontally(tween(300)) { it } + fadeIn(tween(300)) },
+            exitTransition = { slideOutHorizontally(tween(300)) { -it / 3 } + fadeOut(tween(200)) },
+            popEnterTransition = { slideInHorizontally(tween(300)) { -it / 3 } + fadeIn(tween(300)) },
+            popExitTransition = { slideOutHorizontally(tween(300)) { it } + fadeOut(tween(200)) }
         ) {
-            composable(Routes.HOME) {
+            // Bottom-tab destinations: crossfade only (no slide between sibling screens)
+            composable(
+                Routes.HOME,
+                enterTransition = { fadeIn(tween(200)) },
+                exitTransition = { fadeOut(tween(200)) },
+                popEnterTransition = { fadeIn(tween(200)) },
+                popExitTransition = { fadeOut(tween(200)) }
+            ) {
                 HomeScreen(
                     onOpen = { route -> navController.navigate(route) },
                     onOpenFamily = { navController.navigate(Routes.FAMILY) }
                 )
             }
-            composable(Routes.CALENDAR) { CalendarScreen() }
-            composable(Routes.CHAT) { ChatScreen(onOpen = { id -> navController.navigate(Routes.chatDetail(id)) }) }
-            composable(Routes.FAMILY) { FamilyScreen() }
-            composable(Routes.PROFILE) {
+            composable(
+                Routes.CALENDAR,
+                enterTransition = { fadeIn(tween(200)) },
+                exitTransition = { fadeOut(tween(200)) },
+                popEnterTransition = { fadeIn(tween(200)) },
+                popExitTransition = { fadeOut(tween(200)) }
+            ) { CalendarScreen() }
+            composable(
+                Routes.CHAT,
+                enterTransition = { fadeIn(tween(200)) },
+                exitTransition = { fadeOut(tween(200)) },
+                popEnterTransition = { fadeIn(tween(200)) },
+                popExitTransition = { fadeOut(tween(200)) }
+            ) { ChatScreen(onOpen = { id -> navController.navigate(Routes.chatDetail(id)) }) }
+            composable(
+                Routes.FAMILY,
+                enterTransition = { fadeIn(tween(200)) },
+                exitTransition = { fadeOut(tween(200)) },
+                popEnterTransition = { fadeIn(tween(200)) },
+                popExitTransition = { fadeOut(tween(200)) }
+            ) { FamilyScreen() }
+            composable(
+                Routes.PROFILE,
+                enterTransition = { fadeIn(tween(200)) },
+                exitTransition = { fadeOut(tween(200)) },
+                popEnterTransition = { fadeIn(tween(200)) },
+                popExitTransition = { fadeOut(tween(200)) }
+            ) {
                 ProfileScreen(
                     onEdit = { navController.navigate(Routes.PROFILE_EDIT) },
                     onSettings = { navController.navigate(Routes.SETTINGS) },
@@ -160,6 +201,7 @@ private fun MainFlow() {
                 )
             }
 
+            // Feature/detail screens: inherit NavHost default (slide)
             composable(Routes.SHOPPING) {
                 ShoppingScreen(onBack = { navController.popBackStack() }, onOpenList = { id -> navController.navigate(Routes.shoppingDetail(id)) })
             }
