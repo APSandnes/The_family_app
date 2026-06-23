@@ -43,10 +43,12 @@ class BirthdayViewModel(app: Application) : AndroidViewModel(app) {
                 db.from("birthdays").select {
                     filter { or { eq("made_by_user_id", userId); eq("family_id", user.familyId) } }
                 }.decodeList<BirthdayModel>()
+                    .filter { it.familyId == null || it.familyId == user.familyId }
             } else {
                 db.from("birthdays").select {
                     filter { eq("made_by_user_id", userId) }
                 }.decodeList<BirthdayModel>()
+                    .filter { it.familyId == null }
             }
         }
     }

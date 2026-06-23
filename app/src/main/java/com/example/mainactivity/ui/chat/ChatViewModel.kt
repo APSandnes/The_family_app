@@ -77,10 +77,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 db.from("conversations")
                     .select { filter { or { eq("user_from", userId); eq("family_id", user.familyId) } } }
                     .decodeList<ConversationModel>()
+                    .filter { it.familyId == null || it.familyId == user.familyId }
             } else {
                 db.from("conversations")
                     .select { filter { eq("user_from", userId) } }
                     .decodeList<ConversationModel>()
+                    .filter { it.familyId == null }
             }
         }
     }

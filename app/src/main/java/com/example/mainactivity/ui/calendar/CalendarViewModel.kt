@@ -64,10 +64,12 @@ class CalendarViewModel(app: Application) : AndroidViewModel(app) {
                 db.from("calendar_events").select {
                     filter { or { eq("user_id", userId); eq("family_id", user.familyId) } }
                 }.decodeList<CalendarEventModel>()
+                    .filter { it.familyId == null || it.familyId == user.familyId }
             } else {
                 db.from("calendar_events").select {
                     filter { eq("user_id", userId) }
                 }.decodeList<CalendarEventModel>()
+                    .filter { it.familyId == null }
             }
         }
     }
