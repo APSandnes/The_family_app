@@ -1,7 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 apply plugin: 'com.google.devtools.ksp'
+
+def localProps = new Properties()
+def localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it) }
 
 android {
     namespace "com.example.mainactivity"
@@ -15,6 +20,9 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "SUPABASE_URL", "\"${localProps.getProperty('SUPABASE_URL', 'https://placeholder.supabase.co')}\""
+        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${localProps.getProperty('SUPABASE_ANON_KEY', 'placeholder-anon-key')}\""
     }
 
     buildTypes {
@@ -26,6 +34,7 @@ android {
 
     buildFeatures {
         compose true
+        buildConfig true
     }
 
     kotlinOptions {
@@ -42,6 +51,7 @@ android {
 dependencies {
     def compose_bom = platform('androidx.compose:compose-bom:2024.09.03')
     def room_version = "2.7.1"
+    def supabase_version = "3.1.4"
 
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -81,6 +91,14 @@ dependencies {
 
     // DataStore for session
     implementation 'androidx.datastore:datastore-preferences:1.1.1'
+
+    // Supabase
+    implementation platform("io.github.jan-tennert.supabase:bom:$supabase_version")
+    implementation 'io.github.jan-tennert.supabase:auth-kt'
+    implementation 'io.github.jan-tennert.supabase:postgrest-kt'
+    implementation 'io.github.jan-tennert.supabase:realtime-kt'
+    implementation 'io.github.jan-tennert.supabase:storage-kt'
+    implementation 'io.ktor:ktor-client-android:3.1.2'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 

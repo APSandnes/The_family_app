@@ -93,7 +93,7 @@ fun SettingsScreen(onBack: () -> Unit, vm: SettingsViewModel = viewModel()) {
                 LeadTimeSelector(selected = notifyDaysBefore, onSelect = vm::setNotifyDaysBefore)
             }
             ToggleRow(Icons.Filled.Palette, "Visible on family map", "Share your location with family", location) { location = it }
-            InfoCard(Icons.Filled.Lock, "Privacy", "Your data is stored locally and credentials are hashed.")
+            InfoCard(Icons.Filled.Lock, "Privacy", "Authentication is handled by Supabase. Family data is stored locally and synced securely.")
             InfoCard(Icons.Filled.Info, "About", "The Family App · v2.0 — one home for everything you share.")
         }
     }
