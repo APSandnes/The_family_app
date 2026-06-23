@@ -15,7 +15,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 class SessionManager(private val context: Context) {
 
-    private val userIdKey = stringPreferencesKey("current_user_id")
+    private val userIdKey = stringPreferencesKey("current_user_id_v2")
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
     private val notifyDaysBeforeKey = intPreferencesKey("notify_days_before")
