@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.mainactivity.ui.components.BirthdayPickerField
+import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.PrimaryButton
@@ -67,6 +69,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
     val context = LocalContext.current
 
@@ -94,6 +97,7 @@ fun ProfileScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            ErrorBanner(error)
             Box(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(heroGradient(dark)).padding(24.dp)
             ) {
@@ -102,11 +106,11 @@ fun ProfileScreen(
                     Box(
                         Modifier.size(72.dp).clickable { showAvatarPicker = true }
                     ) {
-                        val avatarUri = user?.avatarUri
+                        val avatarUri = user?.avatarUrl
                         var imgFailed by remember(avatarUri) { mutableStateOf(false) }
                         if (avatarUri != null && !imgFailed) {
                             AsyncImage(
-                                model = File(avatarUri),
+                                model = avatarUri,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize().clip(CircleShape),
@@ -165,7 +169,7 @@ fun ProfileScreen(
 
     if (showAvatarPicker) {
         AvatarPickerDialog(
-            hasAvatar = user?.avatarUri != null,
+            hasAvatar = user?.avatarUrl != null,
             onDismiss = { showAvatarPicker = false },
             onCamera = {
                 showAvatarPicker = false
@@ -259,7 +263,7 @@ fun ProfileEditScreen(
             FamilyTextField(name, { name = it }, "Full name")
             FamilyTextField(email, { email = it }, "Email", keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
             FamilyTextField(mobile, { mobile = it }, "Mobile", keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
-            FamilyTextField(birthday, { birthday = it }, "Birthday")
+            BirthdayPickerField(value = birthday, onChange = { birthday = it })
             Spacer(Modifier.height(6.dp))
             PrimaryButton("Save changes", onClick = { viewModel.save(name, email, birthday, mobile); onBack() }, modifier = Modifier.fillMaxWidth())
         }

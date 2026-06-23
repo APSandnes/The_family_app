@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,7 +58,7 @@ import com.example.mainactivity.ui.theme.BrandGradient
 
 @Composable
 fun ChatScreen(
-    onOpen: (Long) -> Unit,
+    onOpen: (String) -> Unit,
     viewModel: ChatViewModel = viewModel()
 ) {
     val conversations by viewModel.conversations.collectAsStateWithLifecycle(emptyList())
@@ -112,13 +113,15 @@ fun ChatScreen(
 
 @Composable
 fun ConversationScreen(
-    conversationId: Long,
+    conversationId: String,
     onBack: () -> Unit,
     viewModel: ChatViewModel = viewModel()
 ) {
+    androidx.compose.runtime.LaunchedEffect(conversationId) { viewModel.loadConversation(conversationId) }
     val context = LocalContext.current
-    val conversation by viewModel.conversation(conversationId).collectAsStateWithLifecycle(null)
-    val messages by viewModel.messages(conversationId).collectAsStateWithLifecycle(emptyList())
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val conversation by viewModel.conversation.collectAsStateWithLifecycle()
+    val messages by viewModel.messages.collectAsStateWithLifecycle()
     val myId by viewModel.currentUserId.collectAsStateWithLifecycle(null)
     var draft by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
@@ -186,7 +189,13 @@ fun ConversationScreen(
                         maxLines = 4
                     )
                     FloatingActionButton(
-                        onClick = { if (draft.isNotBlank()) { viewModel.send(conversationId, draft.trim()); draft = "" } },
+                        onClick = {
+                            if (draft.isNotBlank()) {
+                                viewModel.send(conversationId, draft.trim())
+                                draft = ""
+                                keyboardController?.hide()
+                            }
+                        },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(52.dp)
