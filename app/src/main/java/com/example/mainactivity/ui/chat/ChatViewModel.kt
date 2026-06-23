@@ -12,6 +12,7 @@ import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.MessageModel
 import com.example.mainactivity.data.remote.SupabaseManager
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.RealtimeChannel
@@ -82,7 +83,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 .decodeList<ConversationModel>()
                 .firstOrNull()
             _messages.value = db.from("messages")
-                .select { filter { eq("conversation_id", conversationId) } }
+                .select { filter { eq("conversation_id", conversationId) }; order("sent_at", Order.ASCENDING) }
                 .decodeList<MessageModel>()
             subscribeToMessages(conversationId)
         }
@@ -130,7 +131,7 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
                 put("text", text)
             })
             _messages.value = db.from("messages")
-                .select { filter { eq("conversation_id", conversationId) } }
+                .select { filter { eq("conversation_id", conversationId) }; order("sent_at", Order.ASCENDING) }
                 .decodeList<MessageModel>()
         }
     }
