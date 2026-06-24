@@ -9,10 +9,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mainactivity.data.ConversationModel
 import com.example.mainactivity.data.ConversationParticipantModel
+import com.example.mainactivity.data.ConversationWithPreview
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.MessageModel
+import com.example.mainactivity.data.MessageReactionModel
 import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.data.remote.SupabaseManager
+import com.example.mainactivity.notifications.NotificationHelper
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
@@ -24,14 +27,20 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,11 +51,22 @@ import java.io.File
 class ChatViewModel(
     app: Application,
 ) : AndroidViewModel(app) {
+    private val appContext: Context = app.applicationContext
     private val repo = FamilyRepository.get(app)
     private val db get() = SupabaseManager.client.postgrest
 
-    private val _conversations = MutableStateFlow<List<ConversationModel>>(emptyList())
-    val conversations: StateFlow<List<ConversationModel>> = _conversations.asStateFlow()
+    private val _conversations = MutableStateFlow<List<ConversationWithPreview>>(emptyList())
+    val conversations: StateFlow<List<ConversationWithPreview>> = _conversations.asStateFlow()
+
+    val totalUnread: StateFlow<Int> = _conversations
+        .map { list -> list.sumOf { it.unreadCount } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    private val _currentConversationId = MutableStateFlow<String?>(null)
+
+    fun setCurrentConversation(id: String?) {
+        _currentConversationId.value = id
+    }
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -65,19 +85,15 @@ class ChatViewModel(
     private val _userProfiles = MutableStateFlow<Map<String, UserModel>>(emptyMap())
     val userProfiles: StateFlow<Map<String, UserModel>> = _userProfiles.asStateFlow()
 
-    // Participants for the currently-open conversation
     private val _currentParticipants = MutableStateFlow<List<UserModel>>(emptyList())
     val currentParticipants: StateFlow<List<UserModel>> = _currentParticipants.asStateFlow()
 
-    // All family members (for the member picker)
     private val _familyMembers = MutableStateFlow<List<UserModel>>(emptyList())
     val familyMembers: StateFlow<List<UserModel>> = _familyMembers.asStateFlow()
 
-    // Participants per conversation for the list view
     private val _conversationParticipants = MutableStateFlow<Map<String, List<UserModel>>>(emptyMap())
     val conversationParticipants: StateFlow<Map<String, List<UserModel>>> = _conversationParticipants.asStateFlow()
 
-    // Navigation event: open a different conversation (e.g. after upgrading 1:1 → group)
     private val _navigateToConversation = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val navigateToConversation: SharedFlow<String> = _navigateToConversation.asSharedFlow()
 
@@ -87,7 +103,13 @@ class ChatViewModel(
     private val _errorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
 
+    // Reactions: messageId -> (emoji -> list of userId)
+    private val _reactions = MutableStateFlow<Map<String, Map<String, List<String>>>>(emptyMap())
+    val reactions: StateFlow<Map<String, Map<String, List<String>>>> = _reactions.asStateFlow()
+
     private var realtimeChannel: RealtimeChannel? = null
+    private var reactionsChannel: RealtimeChannel? = null
+    private val notifChannels = mutableMapOf<String, RealtimeChannel>()
     private var pendingCameraConversationId: String = ""
     private var pendingCameraFile: File? = null
 
@@ -110,15 +132,12 @@ class ChatViewModel(
         runCatching {
             val user = repo.getUser(userId)
 
-            // Load all family members for the picker
             if (user?.familyId != null) {
                 val members = repo.getFamilyMembers(user.familyId)
                 _familyMembers.value = members
                 _userProfiles.value = members.associateBy { it.id }
             }
 
-            // RLS policy on conversations filters to: user_from=me OR is_conversation_member(id, me)
-            // This works even if participant rows haven't been inserted yet (creator fallback).
             val convs =
                 db
                     .from("conversations")
@@ -133,8 +152,6 @@ class ChatViewModel(
 
             val conversationIds = convs.map { it.id }
 
-            // Participant rows are supplementary (for display: avatar, name).
-            // Non-fatal if the table doesn't exist or a policy blocks the read.
             val allRows =
                 runCatching {
                     db
@@ -159,9 +176,97 @@ class ChatViewModel(
                     .groupBy { it.conversationId }
                     .mapValues { (_, rows) -> rows.mapNotNull { _userProfiles.value[it.userId] } }
             _conversationParticipants.value = participantsMap
-            _conversations.value = convs
+
+            // Fetch last message for each conversation in parallel
+            val previews = coroutineScope {
+                convs.map { conv ->
+                    async {
+                        val lastMsg = repo.getLastMessage(conv.id)
+                        val lastSenderName = when {
+                            lastMsg == null -> null
+                            lastMsg.userFrom == userId -> "You"
+                            else -> _userProfiles.value[lastMsg.userFrom]?.name
+                                ?: lastMsg.userFrom.take(8)
+                        }
+                        ConversationWithPreview(
+                            conversation = conv,
+                            lastMessage = lastMsg,
+                            lastSenderName = lastSenderName,
+                            unreadCount = 0,
+                            participants = participantsMap[conv.id] ?: emptyList(),
+                        )
+                    }
+                }.awaitAll()
+            }
+
+            _conversations.value = previews
+
+            // Subscribe to all conversations for notifications
+            subscribeAllForNotifications(userId)
         }
         _isLoading.value = false
+    }
+
+    private suspend fun subscribeAllForNotifications(userId: String) {
+        val notifEnabled = repo.notificationsEnabled.first()
+        _conversations.value.forEach { preview ->
+            val convId = preview.conversation.id
+            if (notifChannels.containsKey(convId)) return@forEach
+            val channel = SupabaseManager.client.channel("notify-$convId")
+            notifChannels[convId] = channel
+            val insertFlow =
+                channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+                    table = "messages"
+                    filter("conversation_id", FilterOperator.EQ, convId)
+                }
+            channel.subscribe()
+            viewModelScope.launch {
+                insertFlow.collect { change ->
+                    val msg = change.decodeRecord<MessageModel>()
+                    if (msg.userFrom != userId) {
+                        val isCurrentConv = _currentConversationId.value == convId
+                        // Increment unread if not viewing this conversation
+                        if (!isCurrentConv) {
+                            _conversations.update { list ->
+                                list.map { p ->
+                                    if (p.conversation.id == convId)
+                                        p.copy(unreadCount = p.unreadCount + 1)
+                                    else p
+                                }
+                            }
+                        }
+                        // Update last-message preview
+                        val senderName = _userProfiles.value[msg.userFrom]?.name ?: "Family member"
+                        _conversations.update { list ->
+                            list.map { p ->
+                                if (p.conversation.id == convId)
+                                    p.copy(lastMessage = msg, lastSenderName = senderName)
+                                else p
+                            }
+                        }
+                        // Post notification
+                        if (!isCurrentConv && notifEnabled) {
+                            val sender = _userProfiles.value[msg.userFrom]
+                            NotificationHelper.postMessageNotification(
+                                appContext,
+                                preview.conversation,
+                                msg,
+                                sender,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun markRead(conversationId: String) {
+        viewModelScope.launch {
+            repo.markConversationRead(conversationId)
+            _conversations.update { list ->
+                list.map { if (it.conversation.id == conversationId) it.copy(unreadCount = 0) else it }
+            }
+        }
     }
 
     fun loadConversation(conversationId: String) =
@@ -173,15 +278,8 @@ class ChatViewModel(
                         .select { filter { eq("id", conversationId) } }
                         .decodeList<ConversationModel>()
                         .firstOrNull()
-                _messages.value =
-                    db
-                        .from("messages")
-                        .select {
-                            filter { eq("conversation_id", conversationId) }
-                            order("sent_at", Order.ASCENDING)
-                        }.decodeList<MessageModel>()
+                loadMessages(conversationId)
 
-                // Load participants for this conversation
                 val participantRows =
                     db
                         .from("conversation_participants")
@@ -201,7 +299,6 @@ class ChatViewModel(
                 }
                 _currentParticipants.value = participantUserIds.mapNotNull { _userProfiles.value[it] }
 
-                // Ensure family members list is populated for the add-member picker
                 val userId = repo.currentUserId.first()
                 val user = if (userId != null) repo.getUser(userId) else null
                 if (user?.familyId != null && _familyMembers.value.isEmpty()) {
@@ -211,8 +308,20 @@ class ChatViewModel(
                 }
 
                 subscribeToMessages(conversationId)
+                loadReactions(conversationId)
+                subscribeToReactions(conversationId)
             }
         }
+
+    private suspend fun loadMessages(conversationId: String) {
+        _messages.value =
+            db
+                .from("messages")
+                .select {
+                    filter { eq("conversation_id", conversationId) }
+                    order("sent_at", Order.ASCENDING)
+                }.decodeList<MessageModel>()
+    }
 
     private suspend fun subscribeToMessages(conversationId: String) {
         realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
@@ -235,24 +344,129 @@ class ChatViewModel(
         }
     }
 
+    // ── Reactions ────────────────────────────────────────────────────────────
+
+    fun loadReactions(conversationId: String) {
+        viewModelScope.launch {
+            val result =
+                runCatching {
+                    SupabaseManager.client.postgrest["message_reactions"]
+                        .select { filter { eq("conversation_id", conversationId) } }
+                        .decodeList<MessageReactionModel>()
+                }.getOrNull() ?: return@launch
+            _reactions.value =
+                result.groupBy { it.messageId }
+                    .mapValues { (_, rs) ->
+                        rs.groupBy { it.emoji }
+                            .mapValues { (_, users) -> users.map { it.userId } }
+                    }
+        }
+    }
+
+    private suspend fun subscribeToReactions(conversationId: String) {
+        reactionsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+        val channel = SupabaseManager.client.channel("reactions-$conversationId")
+        reactionsChannel = channel
+        val insertFlow =
+            channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+                table = "message_reactions"
+                filter("conversation_id", FilterOperator.EQ, conversationId)
+            }
+        val deleteFlow =
+            channel.postgresChangeFlow<PostgresAction.Delete>(schema = "public") {
+                table = "message_reactions"
+            }
+        channel.subscribe()
+        viewModelScope.launch {
+            insertFlow.collect { change ->
+                val reaction = change.decodeRecord<MessageReactionModel>()
+                _reactions.update { current ->
+                    val msgReactions = current[reaction.messageId]?.toMutableMap() ?: mutableMapOf()
+                    val users = msgReactions[reaction.emoji]?.toMutableList() ?: mutableListOf()
+                    if (!users.contains(reaction.userId)) users.add(reaction.userId)
+                    msgReactions[reaction.emoji] = users
+                    current + (reaction.messageId to msgReactions)
+                }
+            }
+        }
+        viewModelScope.launch {
+            deleteFlow.collect {
+                loadReactions(conversationId)
+            }
+        }
+    }
+
+    fun toggleReaction(messageId: String, conversationId: String, emoji: String) {
+        viewModelScope.launch {
+            val userId = repo.currentUserId.first() ?: return@launch
+            val currentReactions = _reactions.value[messageId]
+            val myCurrentEmoji = currentReactions?.entries?.find { userId in it.value }?.key
+            if (myCurrentEmoji == emoji) {
+                repo.removeReaction(messageId)
+            } else {
+                repo.addReaction(messageId, conversationId, emoji)
+            }
+        }
+    }
+
+    // ── Media send ───────────────────────────────────────────────────────────
+
+    fun sendImage(conversationId: String, bytes: ByteArray, filename: String) {
+        viewModelScope.launch {
+            val userId = repo.currentUserId.first() ?: return@launch
+            runCatching {
+                val url = repo.uploadChatMedia(conversationId, bytes, filename)
+                db.from("messages").insert(
+                    buildJsonObject {
+                        put("conversation_id", conversationId)
+                        put("user_from", userId)
+                        put("text", "")
+                        put("message_type", "image")
+                        put("media_url", url)
+                    },
+                )
+                loadMessages(conversationId)
+            }.onFailure { e -> Log.e("ChatVM", "sendImage failed", e) }
+        }
+    }
+
+    fun sendVoice(conversationId: String, bytes: ByteArray, filename: String) {
+        viewModelScope.launch {
+            val userId = repo.currentUserId.first() ?: return@launch
+            runCatching {
+                val url = repo.uploadChatMedia(conversationId, bytes, filename)
+                db.from("messages").insert(
+                    buildJsonObject {
+                        put("conversation_id", conversationId)
+                        put("user_from", userId)
+                        put("text", "")
+                        put("message_type", "voice")
+                        put("media_url", url)
+                    },
+                )
+                loadMessages(conversationId)
+            }.onFailure { e -> Log.e("ChatVM", "sendVoice failed", e) }
+        }
+    }
+
+    // ── Existing methods (preserved, updated for ConversationWithPreview) ────
+
     private suspend fun findExistingOneOnOne(
         userId: String,
         otherId: String,
     ): String? {
-        // Old-style: user_to field (fast, in-memory)
         _conversations.value
-            .firstOrNull { conv ->
-                conv.userTo != null &&
+            .firstOrNull { preview ->
+                preview.conversation.userTo != null &&
                     (
-                        (conv.userFrom == userId && conv.userTo == otherId) ||
-                            (conv.userFrom == otherId && conv.userTo == userId)
+                        (preview.conversation.userFrom == userId && preview.conversation.userTo == otherId) ||
+                            (preview.conversation.userFrom == otherId && preview.conversation.userTo == userId)
                     )
-            }?.id
+            }?.conversation?.id
             ?.let { return it }
 
-        // New-style: query participant rows directly (avoids profile-mapping size issues)
         return runCatching {
-            val myConvIds = _conversations.value.map { it.id }
+            val myConvIds = _conversations.value.map { it.conversation.id }
             if (myConvIds.isEmpty()) return@runCatching null
 
             val otherRows =
@@ -333,7 +547,6 @@ class ChatViewModel(
 
             runCatching {
                 if (participants.size <= 2) {
-                    // 1:1 → create a new group conversation with all three
                     val allIds = (participants.map { it.id } + newUserId).distinct()
                     val conv =
                         db
@@ -358,7 +571,6 @@ class ChatViewModel(
                     }
                     _navigateToConversation.emit(conv.id)
                 } else {
-                    // Already a group — add directly
                     db.from("conversation_participants").insert(
                         buildJsonObject {
                             put("conversation_id", conversationId)
@@ -438,13 +650,7 @@ class ChatViewModel(
                 }.isSuccess
 
             runCatching {
-                _messages.value =
-                    db
-                        .from("messages")
-                        .select {
-                            filter { eq("conversation_id", conversationId) }
-                            order("sent_at", Order.ASCENDING)
-                        }.decodeList<MessageModel>()
+                loadMessages(conversationId)
             }.onFailure {
                 if (!insertOk) _messages.update { it.filter { msg -> msg.id != tempId } }
             }
@@ -551,10 +757,9 @@ class ChatViewModel(
                         .from("group-images")
                         .delete("$conversationId/image.jpg")
                 }
-                // messages and participant rows cascade via ON DELETE CASCADE
                 db.from("conversations").delete { filter { eq("id", conversationId) } }
             }.onSuccess {
-                _conversations.update { it.filter { conv -> conv.id != conversationId } }
+                _conversations.update { it.filter { preview -> preview.conversation.id != conversationId } }
                 val userId = repo.currentUserId.first() ?: return@onSuccess
                 loadConversations(userId)
                 _conversationDeleted.emit(Unit)
@@ -568,6 +773,10 @@ class ChatViewModel(
         super.onCleared()
         viewModelScope.launch {
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+            reactionsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+            notifChannels.values.forEach { ch ->
+                runCatching { SupabaseManager.client.realtime.removeChannel(ch) }
+            }
         }
     }
 }

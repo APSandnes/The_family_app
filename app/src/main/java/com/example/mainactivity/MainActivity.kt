@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.ThemeMode
 import com.example.mainactivity.data.remote.SupabaseManager
+import com.example.mainactivity.notifications.NotificationHelper
 import com.example.mainactivity.ui.navigation.FamilyApp
 import com.example.mainactivity.ui.theme.TheFamilyAppTheme
 import io.github.jan.supabase.auth.handleDeeplinks
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        NotificationHelper.createAllChannels(this)
         handleAuthDeepLink(intent)
         setContent {
             val repo = FamilyRepository.get(applicationContext)

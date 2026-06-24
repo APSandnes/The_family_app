@@ -29,4 +29,6 @@ object Routes {
     fun wishlistDetail(id: String) = "wishlist/$id"
 
     fun chatDetail(id: String) = "chat/$id"
+
+    const val CHAT_DETAIL_DEEP_LINK = "familyapp://chat/{conversationId}"
 }

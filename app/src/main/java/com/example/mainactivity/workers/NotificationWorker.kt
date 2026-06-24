@@ -1,13 +1,12 @@
 package com.example.mainactivity.workers
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
+import com.example.mainactivity.notifications.NotificationHelper
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -29,8 +28,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-private const val CHANNEL_BIRTHDAYS = "channel_birthdays"
-private const val CHANNEL_CALENDAR = "channel_calendar"
 const val NOTIFICATION_WORK_NAME = "family_notifications"
 
 class NotificationWorker(
@@ -46,7 +43,7 @@ class NotificationWorker(
         val today = LocalDate.now()
         val db = SupabaseManager.client.postgrest
 
-        createChannels()
+        NotificationHelper.createAllChannels(applicationContext)
 
         val user =
             runCatching {
@@ -118,19 +115,6 @@ class NotificationWorker(
         return Result.success()
     }
 
-    private fun createChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_BIRTHDAYS, "Birthdays", NotificationManager.IMPORTANCE_DEFAULT)
-                .apply { description = "Birthday reminders for family members" },
-        )
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_CALENDAR, "Calendar events", NotificationManager.IMPORTANCE_DEFAULT)
-                .apply { description = "Reminders for upcoming calendar events" },
-        )
-    }
-
     private fun tapIntent(): PendingIntent {
         val intent =
             Intent(applicationContext, MainActivity::class.java).apply {
@@ -153,7 +137,7 @@ class NotificationWorker(
         nm.notify(
             b.id.hashCode() * 2,
             NotificationCompat
-                .Builder(applicationContext, CHANNEL_BIRTHDAYS)
+                .Builder(applicationContext, NotificationHelper.CHANNEL_BIRTHDAYS)
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setContentTitle(title)
                 .setAutoCancel(true)
@@ -176,7 +160,7 @@ class NotificationWorker(
         nm.notify(
             e.id.hashCode() * 2 + 1,
             NotificationCompat
-                .Builder(applicationContext, CHANNEL_CALENDAR)
+                .Builder(applicationContext, NotificationHelper.CHANNEL_CALENDAR)
                 .setSmallIcon(android.R.drawable.ic_menu_today)
                 .setContentTitle(title)
                 .setAutoCancel(true)
