@@ -419,7 +419,10 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
             // messages and participant rows cascade via ON DELETE CASCADE
             db.from("conversations").delete { filter { eq("id", conversationId) } }
         }.onSuccess {
+            _conversations.update { it.filter { conv -> conv.id != conversationId } }
             _conversationDeleted.emit(Unit)
+            val userId = repo.currentUserId.first() ?: return@onSuccess
+            loadConversations(userId)
         }.onFailure { e ->
             Log.e("ChatVM", "deleteConversation failed", e)
             _errorEvent.emit("Failed to delete conversation")
