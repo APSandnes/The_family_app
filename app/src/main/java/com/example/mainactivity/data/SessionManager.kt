@@ -21,6 +21,7 @@ class SessionManager(
     private val notificationsEnabledKey = booleanPreferencesKey("notifications_enabled")
     private val notifyDaysBeforeKey = intPreferencesKey("notify_days_before")
     private val locationVisibleKey = booleanPreferencesKey("location_visible")
+    private val permissionsRequestedKey = booleanPreferencesKey("permissions_requested")
 
     val currentUserId: Flow<String?> =
         context.dataStore.data.map { prefs ->
@@ -51,6 +52,11 @@ class SessionManager(
             prefs[locationVisibleKey] ?: false
         }
 
+    val permissionsRequested: Flow<Boolean> =
+        context.dataStore.data.map { prefs ->
+            prefs[permissionsRequestedKey] ?: false
+        }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[themeModeKey] = mode.name }
     }
@@ -65,6 +71,10 @@ class SessionManager(
 
     suspend fun setLocationVisible(enabled: Boolean) {
         context.dataStore.edit { it[locationVisibleKey] = enabled }
+    }
+
+    suspend fun setPermissionsRequested() {
+        context.dataStore.edit { it[permissionsRequestedKey] = true }
     }
 
     suspend fun signIn(userId: String) {

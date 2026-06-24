@@ -8,11 +8,15 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -27,6 +31,7 @@ class FamilyRepository(
     val notificationsEnabled: Flow<Boolean> = session.notificationsEnabled
     val notifyDaysBefore: Flow<Int> = session.notifyDaysBefore
     val locationVisible: Flow<Boolean> = session.locationVisible
+    val permissionsRequested: Flow<Boolean> = session.permissionsRequested
     val sessionStatusFlow: StateFlow<SessionStatus> get() = SupabaseManager.client.auth.sessionStatus
 
     suspend fun setThemeMode(mode: ThemeMode) = session.setThemeMode(mode)
@@ -36,6 +41,8 @@ class FamilyRepository(
     suspend fun setNotifyDaysBefore(days: Int) = session.setNotifyDaysBefore(days)
 
     suspend fun setLocationVisible(enabled: Boolean) = session.setLocationVisible(enabled)
+
+    suspend fun setPermissionsRequested() = session.setPermissionsRequested()
 
     @Volatile private var cachedUser: UserModel? = null
 
@@ -362,6 +369,95 @@ class FamilyRepository(
         SupabaseManager.client.postgrest.from("families").update({
             set("name", newName.trim())
         }) { filter { eq("id", familyId) } }
+    }
+
+    // ---- Chat ----
+
+    suspend fun getLastMessage(conversationId: String): MessageModel? =
+        runCatching {
+            SupabaseManager.client.postgrest
+                .from("messages")
+                .select {
+                    filter { eq("conversation_id", conversationId) }
+                    order("sent_at", Order.DESCENDING)
+                }
+                .decodeList<MessageModel>()
+                .firstOrNull()
+        }.getOrNull()
+
+    suspend fun markConversationRead(conversationId: String) {
+        val userId = currentUserId.first() ?: return
+        runCatching {
+            SupabaseManager.client.postgrest
+                .from("conversation_participants")
+                .update({ set("last_read_at", Instant.now().toString()) }) {
+                    filter {
+                        eq("conversation_id", conversationId)
+                        eq("user_id", userId)
+                    }
+                }
+        }
+    }
+
+    suspend fun sendMessage(conversationId: String, text: String): Result<Unit> =
+        runCatching {
+            val userId = currentUserId.first() ?: error("Not signed in")
+            SupabaseManager.client.postgrest
+                .from("messages")
+                .insert(
+                    buildJsonObject {
+                        put("conversation_id", conversationId)
+                        put("user_from", userId)
+                        put("text", text)
+                        put("message_type", "text")
+                    },
+                )
+        }
+
+    suspend fun addReaction(
+        messageId: String,
+        conversationId: String,
+        emoji: String,
+    ): Result<Unit> =
+        runCatching {
+            val userId = currentUserId.first() ?: error("Not signed in")
+            SupabaseManager.client.postgrest
+                .from("message_reactions")
+                .upsert(
+                    buildJsonObject {
+                        put("message_id", messageId)
+                        put("conversation_id", conversationId)
+                        put("user_id", userId)
+                        put("emoji", emoji)
+                    },
+                )
+        }
+
+    suspend fun removeReaction(messageId: String): Result<Unit> =
+        runCatching {
+            val userId = currentUserId.first() ?: error("Not signed in")
+            SupabaseManager.client.postgrest
+                .from("message_reactions")
+                .delete {
+                    filter {
+                        eq("message_id", messageId)
+                        eq("user_id", userId)
+                    }
+                }
+        }
+
+    suspend fun uploadChatMedia(
+        conversationId: String,
+        bytes: ByteArray,
+        filename: String,
+    ): String {
+        val authUid =
+            SupabaseManager.client.auth.currentSessionOrNull()?.user?.id
+                ?: error("Not authenticated")
+        val path = "$conversationId/$authUid/$filename"
+        val bucket = SupabaseManager.client.storage.from("chat-media")
+        bucket.upload(path, bytes) { upsert = true }
+        return bucket.publicUrl(path)
     }
 
     companion object {
