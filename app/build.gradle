@@ -8,12 +8,12 @@ if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it
 
 android {
     namespace = "com.example.mainactivity"
-    compileSdkVersion 36
+    compileSdkVersion 37
 
     defaultConfig {
         applicationId "com.example.mainactivity"
         minSdkVersion 23
-        targetSdkVersion 36
+        targetSdkVersion 37
         versionCode 1
         versionName "1.0"
 
@@ -96,7 +96,7 @@ dependencies {
     implementation 'io.ktor:ktor-client-okhttp:3.5.0'
 
     // Google Maps
-    implementation 'com.google.maps.android:maps-compose:8.4.0'
+    implementation 'com.google.maps.android:maps-compose:8.3.0'
     implementation 'com.google.android.gms:play-services-location:21.3.0'
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
