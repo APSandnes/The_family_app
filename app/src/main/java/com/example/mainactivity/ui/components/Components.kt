@@ -65,7 +65,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -153,6 +156,7 @@ fun FamilyTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
     isPassword: Boolean = false,
     keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
@@ -166,6 +170,7 @@ fun FamilyTextField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         label = { Text(label) },
+        enabled = enabled,
         singleLine = singleLine,
         isError = isError,
         leadingIcon = leadingIcon?.let { { Icon(it, null) } },
@@ -312,6 +317,35 @@ fun PillTag(
     ) {
         Text(text, color = content, style = MaterialTheme.typography.labelMedium)
     }
+}
+
+@Composable
+fun CopyableCodeField(
+    code: String,
+    label: String = "Share code",
+    modifier: Modifier = Modifier,
+) {
+    val clipboard = LocalClipboardManager.current
+    OutlinedTextField(
+        value = code,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        singleLine = true,
+        trailingIcon = {
+            IconButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = "Copy code")
+            }
+        },
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    )
 }
 
 /** Birthday date picker field — read-only OutlinedTextField that opens a DatePickerDialog on tap.

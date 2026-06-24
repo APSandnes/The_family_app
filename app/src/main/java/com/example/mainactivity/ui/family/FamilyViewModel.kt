@@ -103,4 +103,19 @@ class FamilyViewModel(
             repo.leaveFamily(userId)
             load(userId)
         }
+
+    fun generateJoinCode(): String =
+        java.util.UUID.randomUUID().toString().take(8).uppercase()
+
+    fun renameFamily(newName: String) {
+        val fid = _family.value?.id ?: return
+        viewModelScope.launch {
+            repo.renameFamily(fid, newName)
+                .onSuccess {
+                    val userId = repo.currentUserId.first() ?: return@launch
+                    load(userId)
+                }
+                .onFailure { _error.value = it.message }
+        }
+    }
 }

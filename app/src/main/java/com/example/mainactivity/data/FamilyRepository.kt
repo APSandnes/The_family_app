@@ -358,6 +358,12 @@ class FamilyRepository(
         }
     }
 
+    suspend fun renameFamily(familyId: String, newName: String): Result<Unit> = runCatching {
+        SupabaseManager.client.postgrest.from("families").update({
+            set("name", newName.trim())
+        }) { filter { eq("id", familyId) } }
+    }
+
     companion object {
         @Volatile private var instance: FamilyRepository? = null
 

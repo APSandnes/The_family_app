@@ -37,7 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mainactivity.ui.components.CopyableCodeField
 import com.example.mainactivity.ui.components.ErrorBanner
+import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.InputDialog
@@ -58,6 +60,7 @@ fun FamilyScreen(
     var showCreate by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showEditFamily by remember { mutableStateOf(false) }
 
     androidx.compose.material3.Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -95,7 +98,13 @@ fun FamilyScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        onClick = { showEditFamily = true },
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Column(Modifier.padding(20.dp)) {
                             Text(family!!.name, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.height(4.dp))
@@ -158,18 +167,30 @@ fun FamilyScreen(
     }
 
     if (showCreate) {
-        InputDialog(
-            title = "Create a family",
-            label = "Family name",
-            secondLabel = "Invite code",
-            confirmText = "Create",
+        CreateFamilyDialog(
             onDismiss = { showCreate = false },
             onConfirm = { name, code ->
                 viewModel.createFamily(name, code)
                 showCreate = false
             },
+            generateCode = { viewModel.generateJoinCode() },
         )
     }
+
+    if (showEditFamily && family != null) {
+        val isAdmin = family!!.adminId == currentUser?.id
+        EditFamilyDialog(
+            initialName = family!!.name,
+            joinCode = family!!.joinCode,
+            isAdmin = isAdmin,
+            onDismiss = { showEditFamily = false },
+            onSave = { newName ->
+                viewModel.renameFamily(newName)
+                showEditFamily = false
+            },
+        )
+    }
+
     if (showJoin) {
         InputDialog(
             title = "Join a family",
@@ -186,4 +207,84 @@ fun FamilyScreen(
             },
         )
     }
+}
+
+@Composable
+private fun CreateFamilyDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, code: String) -> Unit,
+    generateCode: () -> String,
+) {
+    val code = remember { generateCode() }
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("Create a family") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FamilyTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = "Family name",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                CopyableCodeField(code = code)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name, code) },
+                enabled = name.isNotBlank(),
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun EditFamilyDialog(
+    initialName: String,
+    joinCode: String,
+    isAdmin: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf(initialName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("Family settings") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FamilyTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = "Family name",
+                    enabled = isAdmin,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                CopyableCodeField(code = joinCode)
+            }
+        },
+        confirmButton = {
+            if (isAdmin) {
+                TextButton(
+                    onClick = { onSave(name) },
+                    enabled = name.isNotBlank(),
+                ) {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
 }
