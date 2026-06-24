@@ -136,4 +136,24 @@ data class MessageModel(
     val text: String = "",
     @SerialName("sent_at") val sentAt: String = "",
     @SerialName("reply_to_id") val replyToId: String? = null,
+    @SerialName("message_type") val messageType: String = "text",
+    @SerialName("media_url") val mediaUrl: String? = null,
+)
+
+@Serializable
+data class MessageReactionModel(
+    val id: String = "",
+    @SerialName("message_id") val messageId: String = "",
+    @SerialName("conversation_id") val conversationId: String = "",
+    @SerialName("user_id") val userId: String = "",
+    val emoji: String = "",
+    @SerialName("created_at") val createdAt: String = "",
+)
+
+data class ConversationWithPreview(
+    val conversation: ConversationModel,
+    val lastMessage: MessageModel?,
+    val lastSenderName: String?,
+    val unreadCount: Int,
+    val participants: List<UserModel>,
 )
