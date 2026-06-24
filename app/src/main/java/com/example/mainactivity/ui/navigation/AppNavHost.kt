@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,6 +45,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.example.mainactivity.ui.auth.LoginScreen
 import com.example.mainactivity.ui.auth.RegisterScreen
 import com.example.mainactivity.ui.birthday.BirthdayScreen
@@ -57,6 +61,7 @@ import com.example.mainactivity.ui.map.FamilyMapScreen
 import com.example.mainactivity.ui.meal.MealDetailScreen
 import com.example.mainactivity.ui.meal.MealScreen
 import com.example.mainactivity.ui.meal.MealViewModel
+import com.example.mainactivity.ui.onboarding.PermissionsOnboardingScreen
 import com.example.mainactivity.ui.profile.ProfileEditScreen
 import com.example.mainactivity.ui.profile.ProfileScreen
 import com.example.mainactivity.ui.settings.SettingsScreen
@@ -91,6 +96,10 @@ fun FamilyApp(rootViewModel: RootViewModel = viewModel()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         AuthGate.SignedOut -> AuthFlow()
+        AuthGate.NeedsPermissions ->
+            PermissionsOnboardingScreen(
+                onComplete = { rootViewModel.completePermissionsOnboarding() },
+            )
         AuthGate.SignedIn -> MainFlow()
     }
 }
@@ -127,6 +136,8 @@ private fun MainFlow() {
     // instance — a delete in the detail screen must reflect in the list on pop-back.
     val chatVm: ChatViewModel = viewModel()
 
+    val chatUnread by chatVm.totalUnread.collectAsStateWithLifecycle()
+
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -143,6 +154,7 @@ private fun MainFlow() {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     bottomDestinations.forEach { dest ->
                         val isHome = dest.route == Routes.HOME
+                        val isChatDest = dest.route == Routes.CHAT
                         NavigationBarItem(
                             selected = currentRoute == dest.route,
                             onClick = {
@@ -154,7 +166,27 @@ private fun MainFlow() {
                                     restoreState = !isHome
                                 }
                             },
-                            icon = { Icon(dest.icon, contentDescription = dest.label) },
+                            icon = {
+                                if (isChatDest) {
+                                    BadgedBox(
+                                        badge = {
+                                            if (chatUnread > 0) {
+                                                Badge(containerColor = Color(0xFFE53935)) {
+                                                    Text(
+                                                        text = if (chatUnread > 9) "9+" else chatUnread.toString(),
+                                                        color = Color.White,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                    )
+                                                }
+                                            }
+                                        },
+                                    ) {
+                                        Icon(dest.icon, contentDescription = dest.label)
+                                    }
+                                } else {
+                                    Icon(dest.icon, contentDescription = dest.label)
+                                }
+                            },
                             label = { Text(dest.label) },
                             colors =
                                 NavigationBarItemDefaults.colors(
@@ -290,6 +322,7 @@ private fun MainFlow() {
             composable(
                 Routes.CHAT_DETAIL,
                 arguments = listOf(navArgument("conversationId") { type = NavType.StringType }),
+                deepLinks = listOf(navDeepLink { uriPattern = Routes.CHAT_DETAIL_DEEP_LINK }),
             ) { entry ->
                 ConversationScreen(
                     conversationId = entry.arguments!!.getString("conversationId")!!,
