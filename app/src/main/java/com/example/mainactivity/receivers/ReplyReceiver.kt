@@ -17,7 +17,8 @@ class ReplyReceiver : BroadcastReceiver() {
     ) {
         val conversationId = intent.getStringExtra("conversation_id") ?: return
         val replyText =
-            RemoteInput.getResultsFromIntent(intent)
+            RemoteInput
+                .getResultsFromIntent(intent)
                 ?.getCharSequence(NotificationHelper.KEY_TEXT_REPLY)
                 ?.toString()
                 ?.trim()

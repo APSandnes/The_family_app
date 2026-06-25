@@ -81,7 +81,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
@@ -96,25 +96,29 @@ import java.util.Locale
 
 // ── Icon infrastructure ────────────────────────────────────────────────────
 
-private data class MealIconOption(val key: String, val vector: ImageVector)
-
-private val MEAL_ICON_OPTIONS = listOf(
-    MealIconOption("restaurant", Icons.Filled.Restaurant),
-    MealIconOption("restaurant_menu", Icons.Filled.RestaurantMenu),
-    MealIconOption("lunch_dining", Icons.Filled.LunchDining),
-    MealIconOption("dinner_dining", Icons.Filled.DinnerDining),
-    MealIconOption("bakery_dining", Icons.Filled.BakeryDining),
-    MealIconOption("local_pizza", Icons.Filled.LocalPizza),
-    MealIconOption("ramen_dining", Icons.Filled.RamenDining),
-    MealIconOption("set_meal", Icons.Filled.SetMeal),
-    MealIconOption("fastfood", Icons.Filled.Fastfood),
-    MealIconOption("cake", Icons.Filled.Cake),
-    MealIconOption("local_cafe", Icons.Filled.LocalCafe),
-    MealIconOption("outdoor_grill", Icons.Filled.OutdoorGrill),
-    MealIconOption("kitchen", Icons.Filled.Kitchen),
-    MealIconOption("egg", Icons.Filled.Egg),
-    MealIconOption("local_bar", Icons.Filled.LocalBar),
+private data class MealIconOption(
+    val key: String,
+    val vector: ImageVector,
 )
+
+private val MEAL_ICON_OPTIONS =
+    listOf(
+        MealIconOption("restaurant", Icons.Filled.Restaurant),
+        MealIconOption("restaurant_menu", Icons.Filled.RestaurantMenu),
+        MealIconOption("lunch_dining", Icons.Filled.LunchDining),
+        MealIconOption("dinner_dining", Icons.Filled.DinnerDining),
+        MealIconOption("bakery_dining", Icons.Filled.BakeryDining),
+        MealIconOption("local_pizza", Icons.Filled.LocalPizza),
+        MealIconOption("ramen_dining", Icons.Filled.RamenDining),
+        MealIconOption("set_meal", Icons.Filled.SetMeal),
+        MealIconOption("fastfood", Icons.Filled.Fastfood),
+        MealIconOption("cake", Icons.Filled.Cake),
+        MealIconOption("local_cafe", Icons.Filled.LocalCafe),
+        MealIconOption("outdoor_grill", Icons.Filled.OutdoorGrill),
+        MealIconOption("kitchen", Icons.Filled.Kitchen),
+        MealIconOption("egg", Icons.Filled.Egg),
+        MealIconOption("local_bar", Icons.Filled.LocalBar),
+    )
 
 private fun mealIconVector(key: String): ImageVector =
     MEAL_ICON_OPTIONS.find { it.key == key }?.vector ?: Icons.Filled.Restaurant
@@ -191,8 +195,11 @@ private fun CreatePlanDialog(
     var showFromPicker by remember { mutableStateOf(false) }
     var showToPicker by remember { mutableStateOf(false) }
 
-    val canConfirm = name.isNotBlank() && fromDate != null && toDate != null &&
-        !toDate!!.isBefore(fromDate!!)
+    val canConfirm =
+        name.isNotBlank() &&
+            fromDate != null &&
+            toDate != null &&
+            !toDate!!.isBefore(fromDate!!)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -264,10 +271,14 @@ private fun CreatePlanDialog(
     )
 
     if (showFromPicker) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = (fromDate ?: LocalDate.now())
-                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
+        val state =
+            rememberDatePickerState(
+                initialSelectedDateMillis =
+                    (fromDate ?: LocalDate.now())
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli(),
+            )
         DatePickerDialog(
             onDismissRequest = { showFromPicker = false },
             confirmButton = {
@@ -285,10 +296,14 @@ private fun CreatePlanDialog(
     }
 
     if (showToPicker) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = (toDate ?: fromDate ?: LocalDate.now())
-                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
+        val state =
+            rememberDatePickerState(
+                initialSelectedDateMillis =
+                    (toDate ?: fromDate ?: LocalDate.now())
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli(),
+            )
         DatePickerDialog(
             onDismissRequest = { showToPicker = false },
             confirmButton = {
@@ -331,7 +346,7 @@ private fun DatePickerButton(
 fun MealScreen(
     onBack: () -> Unit,
     onOpen: (String) -> Unit,
-    viewModel: MealViewModel = viewModel(),
+    viewModel: MealViewModel = hiltViewModel(),
 ) {
     val plans by viewModel.plans.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
@@ -372,11 +387,12 @@ fun MealScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(plans, key = { it.id }) { plan ->
-                    val dayCount = runCatching {
-                        val from = LocalDate.parse(plan.fromDate)
-                        val to = LocalDate.parse(plan.toDate)
-                        (to.toEpochDay() - from.toEpochDay() + 1).toInt().coerceAtLeast(0)
-                    }.getOrDefault(0)
+                    val dayCount =
+                        runCatching {
+                            val from = LocalDate.parse(plan.fromDate)
+                            val to = LocalDate.parse(plan.toDate)
+                            (to.toEpochDay() - from.toEpochDay() + 1).toInt().coerceAtLeast(0)
+                        }.getOrDefault(0)
                     val dateRange = "${formatMealDate(plan.fromDate)} – ${formatMealDate(plan.toDate)}"
                     val planName = plan.name.ifBlank { "Meal plan" }
                     val cardDescription = "$planName, $dateRange, $dayCount days"
@@ -389,12 +405,14 @@ fun MealScreen(
                             onClick = { onOpen(plan.id) },
                             shape = RoundedCornerShape(16.dp),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .semantics { contentDescription = cardDescription },
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentDescription = cardDescription },
                         ) {
                             Row(
                                 Modifier.padding(18.dp),
@@ -460,7 +478,7 @@ fun MealScreen(
 fun MealDetailScreen(
     planId: String,
     onBack: () -> Unit,
-    viewModel: MealViewModel = viewModel(),
+    viewModel: MealViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(planId) { viewModel.loadPlanDetail(planId) }
     val plan by viewModel.selectedPlan.collectAsStateWithLifecycle()
@@ -486,11 +504,17 @@ fun MealDetailScreen(
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(
                             text = { Text("Rename") },
-                            onClick = { showMenu = false; showRename = true },
+                            onClick = {
+                                showMenu = false
+                                showRename = true
+                            },
                         )
                         DropdownMenuItem(
                             text = { Text("Change icon") },
-                            onClick = { showMenu = false; showIconPicker = true },
+                            onClick = {
+                                showMenu = false
+                                showIconPicker = true
+                            },
                         )
                     }
                 }
@@ -556,12 +580,13 @@ fun MealDetailScreen(
                 Surface(
                     shape = RoundedCornerShape(0.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isEditing) {
-                            editingDayId = day.id
-                            draft = day.food
-                        },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isEditing) {
+                                editingDayId = day.id
+                                draft = day.food
+                            },
                 ) {
                     Column {
                         Row(
@@ -592,14 +617,16 @@ fun MealDetailScreen(
                                         singleLine = true,
                                         shape = RoundedCornerShape(10.dp),
                                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                        keyboardActions = KeyboardActions(onDone = {
-                                            viewModel.setFood(day, draft)
-                                            editingDayId = null
-                                            focusManager.clearFocus()
-                                        }),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .focusRequester(focusRequester),
+                                        keyboardActions =
+                                            KeyboardActions(onDone = {
+                                                viewModel.setFood(day, draft)
+                                                editingDayId = null
+                                                focusManager.clearFocus()
+                                            }),
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .focusRequester(focusRequester),
                                     )
                                     Row(
                                         horizontalArrangement = Arrangement.End,
@@ -620,11 +647,12 @@ fun MealDetailScreen(
                                 Text(
                                     text = if (day.food.isBlank()) "Tap to add meal" else day.food,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = if (day.food.isBlank()) {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface
-                                    },
+                                    color =
+                                        if (day.food.isBlank()) {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
                                     modifier = Modifier.weight(2f),
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -633,11 +661,12 @@ fun MealDetailScreen(
                                         editingDayId = day.id
                                         draft = day.food
                                     },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .semantics {
-                                            contentDescription = "Edit ${day.day} meal"
-                                        },
+                                    modifier =
+                                        Modifier
+                                            .size(48.dp)
+                                            .semantics {
+                                                contentDescription = "Edit ${day.day} meal"
+                                            },
                                 ) {
                                     Icon(
                                         Icons.Filled.Edit,

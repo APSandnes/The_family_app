@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CardGiftcard
@@ -40,7 +41,6 @@ import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -68,7 +68,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.LoadingState
@@ -77,22 +77,26 @@ import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
 // ─── Icon catalogue ──────────────────────────────────────────────────────────
 
-private data class WishlistIconOption(val key: String, val vector: ImageVector)
-
-private val WISHLIST_ICON_OPTIONS = listOf(
-    WishlistIconOption("card_giftcard", Icons.Filled.CardGiftcard),
-    WishlistIconOption("star", Icons.Filled.Star),
-    WishlistIconOption("favorite", Icons.Filled.Favorite),
-    WishlistIconOption("celebration", Icons.Filled.Celebration),
-    WishlistIconOption("flight", Icons.Filled.Flight),
-    WishlistIconOption("home", Icons.Filled.Home),
-    WishlistIconOption("restaurant", Icons.Filled.Restaurant),
-    WishlistIconOption("fitness_center", Icons.Filled.FitnessCenter),
-    WishlistIconOption("shopping_cart", Icons.Filled.ShoppingCart),
-    WishlistIconOption("pets", Icons.Filled.Pets),
-    WishlistIconOption("local_hospital", Icons.Filled.LocalHospital),
-    WishlistIconOption("cake", Icons.Filled.Cake),
+private data class WishlistIconOption(
+    val key: String,
+    val vector: ImageVector,
 )
+
+private val WISHLIST_ICON_OPTIONS =
+    listOf(
+        WishlistIconOption("card_giftcard", Icons.Filled.CardGiftcard),
+        WishlistIconOption("star", Icons.Filled.Star),
+        WishlistIconOption("favorite", Icons.Filled.Favorite),
+        WishlistIconOption("celebration", Icons.Filled.Celebration),
+        WishlistIconOption("flight", Icons.Filled.Flight),
+        WishlistIconOption("home", Icons.Filled.Home),
+        WishlistIconOption("restaurant", Icons.Filled.Restaurant),
+        WishlistIconOption("fitness_center", Icons.Filled.FitnessCenter),
+        WishlistIconOption("shopping_cart", Icons.Filled.ShoppingCart),
+        WishlistIconOption("pets", Icons.Filled.Pets),
+        WishlistIconOption("local_hospital", Icons.Filled.LocalHospital),
+        WishlistIconOption("cake", Icons.Filled.Cake),
+    )
 
 private fun wishlistIconVector(key: String): ImageVector =
     WISHLIST_ICON_OPTIONS.firstOrNull { it.key == key }?.vector ?: Icons.Filled.CardGiftcard
@@ -103,7 +107,7 @@ private fun wishlistIconVector(key: String): ImageVector =
 fun WishlistScreen(
     onBack: () -> Unit,
     onOpen: (String) -> Unit,
-    viewModel: WishlistViewModel = viewModel(),
+    viewModel: WishlistViewModel = hiltViewModel(),
 ) {
     val wishlists by viewModel.wishlists.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
@@ -203,7 +207,7 @@ fun WishlistScreen(
 fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
-    viewModel: WishlistViewModel = viewModel(),
+    viewModel: WishlistViewModel = hiltViewModel(),
 ) {
     androidx.compose.runtime.LaunchedEffect(wishlistId) { viewModel.loadWishlistDetail(wishlistId) }
     val wishlist by viewModel.selectedWishlist.collectAsStateWithLifecycle()
@@ -265,11 +269,12 @@ fun WishlistDetailScreen(
                                 onClick = { viewModel.toggle(wish) },
                                 shape = RoundedCornerShape(16.dp),
                                 color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .semantics {
-                                        contentDescription = "${wish.text}, ${if (wish.checked) "claimed" else "unclaimed"}"
-                                    },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .semantics {
+                                            contentDescription = "${wish.text}, ${if (wish.checked) "claimed" else "unclaimed"}"
+                                        },
                             ) {
                                 Row(
                                     Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -279,22 +284,24 @@ fun WishlistDetailScreen(
                                         Icon(
                                             if (wish.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                                             contentDescription = if (wish.checked) "Unmark as claimed" else "Mark as claimed",
-                                            tint = if (wish.checked) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            },
+                                            tint =
+                                                if (wish.checked) {
+                                                    MaterialTheme.colorScheme.primary
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
                                         )
                                     }
                                     Text(
                                         wish.text,
                                         Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = if (wish.checked) {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        },
+                                        color =
+                                            if (wish.checked) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface
+                                            },
                                         textDecoration = if (wish.checked) TextDecoration.LineThrough else TextDecoration.None,
                                     )
                                 }
@@ -310,10 +317,11 @@ fun WishlistDetailScreen(
                 shadowElevation = 4.dp,
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .imePadding(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .imePadding(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
@@ -338,11 +346,12 @@ fun WishlistDetailScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Add wish",
-                            tint = if (newWishText.isNotBlank()) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                            tint =
+                                if (newWishText.isNotBlank()) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
                 }
@@ -523,11 +532,12 @@ private fun WishlistIconPickerGrid(
                             opt.vector,
                             contentDescription = null,
                             modifier = Modifier.size(22.dp),
-                            tint = if (selected == opt.key) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                            tint =
+                                if (selected == opt.key) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
                 }

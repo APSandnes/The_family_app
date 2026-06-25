@@ -4,6 +4,10 @@ import android.content.Context
 import com.example.mainactivity.data.remote.DEEP_LINK_HOST
 import com.example.mainactivity.data.remote.DEEP_LINK_SCHEME
 import com.example.mainactivity.data.remote.SupabaseManager
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -11,6 +15,8 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,8 +25,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 
-class FamilyRepository(
+@Singleton
+class FamilyRepository @Inject constructor(
     val session: SessionManager,
 ) {
     private val _familyChanged = MutableSharedFlow<Unit>()
@@ -365,11 +373,15 @@ class FamilyRepository(
         }
     }
 
-    suspend fun renameFamily(familyId: String, newName: String): Result<Unit> = runCatching {
-        SupabaseManager.client.postgrest.from("families").update({
-            set("name", newName.trim())
-        }) { filter { eq("id", familyId) } }
-    }
+    suspend fun renameFamily(
+        familyId: String,
+        newName: String,
+    ): Result<Unit> =
+        runCatching {
+            SupabaseManager.client.postgrest.from("families").update({
+                set("name", newName.trim())
+            }) { filter { eq("id", familyId) } }
+        }
 
     // ---- Chat ----
 
@@ -380,8 +392,7 @@ class FamilyRepository(
                 .select {
                     filter { eq("conversation_id", conversationId) }
                     order("sent_at", Order.DESCENDING)
-                }
-                .decodeList<MessageModel>()
+                }.decodeList<MessageModel>()
                 .firstOrNull()
         }.getOrNull()
 
@@ -399,7 +410,10 @@ class FamilyRepository(
         }
     }
 
-    suspend fun sendMessage(conversationId: String, text: String): Result<Unit> =
+    suspend fun sendMessage(
+        conversationId: String,
+        text: String,
+    ): Result<Unit> =
         runCatching {
             val userId = currentUserId.first() ?: error("Not signed in")
             SupabaseManager.client.postgrest
@@ -452,7 +466,10 @@ class FamilyRepository(
         filename: String,
     ): String {
         val authUid =
-            SupabaseManager.client.auth.currentSessionOrNull()?.user?.id
+            SupabaseManager.client.auth
+                .currentSessionOrNull()
+                ?.user
+                ?.id
                 ?: error("Not authenticated")
         val path = "$conversationId/$authUid/$filename"
         val bucket = SupabaseManager.client.storage.from("chat-media")
@@ -461,14 +478,17 @@ class FamilyRepository(
     }
 
     companion object {
-        @Volatile private var instance: FamilyRepository? = null
+        @EntryPoint
+        @InstallIn(SingletonComponent::class)
+        interface FamilyRepositoryEntryPoint {
+            fun familyRepository(): FamilyRepository
+        }
 
         fun get(context: Context): FamilyRepository =
-            instance ?: synchronized(this) {
-                instance ?: FamilyRepository(
-                    SessionManager(context.applicationContext),
-                ).also { instance = it }
-            }
+            EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                FamilyRepositoryEntryPoint::class.java,
+            ).familyRepository()
 
         private val avatarColors =
             intArrayOf(

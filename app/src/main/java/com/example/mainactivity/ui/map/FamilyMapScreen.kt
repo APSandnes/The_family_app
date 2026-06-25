@@ -62,7 +62,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -89,7 +89,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FamilyMapScreen(
     onBack: () -> Unit,
-    viewModel: FamilyMapViewModel = viewModel(),
+    viewModel: FamilyMapViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
@@ -436,7 +436,10 @@ private fun formatLastSeen(updatedAt: String?): String {
     updatedAt ?: return "Unknown"
     return try {
         val instant = java.time.Instant.parse(updatedAt)
-        val seconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
+        val seconds =
+            java.time.Duration
+                .between(instant, java.time.Instant.now())
+                .seconds
         when {
             seconds < 60 -> "Just now" // also handles clock-skew futures (negative seconds)
             seconds < 3600 -> "${seconds / 60} min ago"
@@ -445,7 +448,10 @@ private fun formatLastSeen(updatedAt: String?): String {
                 instant
                     .atZone(java.time.ZoneId.systemDefault())
                     .toLocalDate()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))
+                    .format(
+                        java.time.format.DateTimeFormatter
+                            .ofPattern("MMM d, yyyy"),
+                    )
         }
     } catch (_: Exception) {
         "Unknown"
