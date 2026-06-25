@@ -360,6 +360,7 @@ fun CopyableCodeField(
 fun BirthdayPickerField(
     value: String,
     onChange: (String) -> Unit,
+    label: String = "Birthday (optional)",
 ) {
     var showPicker by remember { mutableStateOf(false) }
     val fallbackMillis = System.currentTimeMillis() - 30L * 365 * 24 * 60 * 60 * 1000
@@ -409,7 +410,7 @@ fun BirthdayPickerField(
         OutlinedTextField(
             value = displayText,
             onValueChange = {},
-            label = { Text("Birthday (optional)") },
+            label = { Text(label) },
             readOnly = true,
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Outlined.Cake, contentDescription = null) },
