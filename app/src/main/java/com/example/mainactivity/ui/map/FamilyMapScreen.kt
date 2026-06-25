@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,7 +127,7 @@ fun FamilyMapScreen(
 
     var foregroundGranted by remember { mutableStateOf(fgGranted()) }
     var backgroundGranted by remember { mutableStateOf(bgGranted()) }
-    var rationaleShown by remember { mutableStateOf(false) }
+    var rationaleShown by rememberSaveable { mutableStateOf(false) }
     var showRationaleDialog by remember { mutableStateOf(false) }
 
     val fgLauncher =
@@ -159,6 +160,9 @@ fun FamilyMapScreen(
             onDismissRequest = {
                 showRationaleDialog = false
                 rationaleShown = true
+                scope.launch {
+                    snackbarHostState.showSnackbar("You can enable location in Settings")
+                }
             },
             title = { Text("Location access") },
             text = {
@@ -222,9 +226,7 @@ fun FamilyMapScreen(
         }
         // Remove stale bitmaps for users no longer visible
         val visibleIds = visibleLocations.map { it.userId }.toSet()
-        markerBitmaps.keys.toList().forEach { key ->
-            if (key !in visibleIds) markerBitmaps.remove(key)
-        }
+        markerBitmaps.keys.retainAll(visibleIds)
     }
 
     DisposableEffect(Unit) {
@@ -235,7 +237,6 @@ fun FamilyMapScreen(
     }
 
     val isSolo = userProfiles.size == 1
-    val hasOtherMembers = userProfiles.size >= 2
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -266,10 +267,7 @@ fun FamilyMapScreen(
                 // Empty state overlay when current user is the only family member
                 if (isSolo) {
                     Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 32.dp),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
                         EmptyState(
@@ -318,7 +316,7 @@ fun FamilyMapScreen(
                         )
                     }
 
-                    if (hasOtherMembers) {
+                    if (!isSolo) {
                         Spacer(Modifier.size(8.dp))
                         MemberLegend(
                             locations = locations,
@@ -432,7 +430,7 @@ private fun formatLastSeen(updatedAt: String?): String {
         val instant = java.time.Instant.parse(updatedAt)
         val seconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
         when {
-            seconds < 60 -> "Just now"
+            seconds < 60 -> "Just now" // also handles clock-skew futures (negative seconds)
             seconds < 3600 -> "${seconds / 60} min ago"
             seconds < 86400 -> "${seconds / 3600} hours ago"
             else ->
@@ -518,7 +516,7 @@ private fun MemberLegend(
                         if (isSharing) {
                             "${member.name}, last seen $statusText"
                         } else {
-                            "${member.name}, location hidden"
+                            "${member.name}, not sharing location"
                         }
 
                     Row(
