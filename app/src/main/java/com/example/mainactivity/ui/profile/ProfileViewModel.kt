@@ -36,6 +36,13 @@ class ProfileViewModel @Inject constructor(
         _error.value = null
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            val userId = repo.currentUserId.first() ?: return@launch
+            _user.value = repo.getUser(userId)
+        }
+    }
+
     private var pendingCameraFile: File? = null
 
     init {

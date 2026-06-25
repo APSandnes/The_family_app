@@ -167,7 +167,7 @@ class MealViewModel @Inject constructor(
                     val planResult = planDeferred.await()
                     val daysResult = daysDeferred.await()
                     _selectedPlan.value = planResult
-                    _days.value = daysResult
+                    _days.value = daysResult.sortedBy { it.date }
                 }
             }
         }

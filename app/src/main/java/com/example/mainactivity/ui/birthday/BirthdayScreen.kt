@@ -259,7 +259,7 @@ private fun AddBirthdayDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FamilyTextField(name, { name = it }, "Name")
-                BirthdayPickerField(value = date, onChange = { date = it })
+                BirthdayPickerField(value = date, onChange = { date = it }, label = "Birthday *")
             }
         },
         confirmButton = {
@@ -289,7 +289,7 @@ private fun EditBirthdayDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FamilyTextField(value = name, onValueChange = { name = it }, label = "Name")
-                BirthdayPickerField(value = date, onChange = { date = it })
+                BirthdayPickerField(value = date, onChange = { date = it }, label = "Birthday *")
             }
         },
         confirmButton = {

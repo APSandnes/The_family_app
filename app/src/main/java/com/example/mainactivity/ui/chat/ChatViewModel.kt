@@ -608,6 +608,18 @@ class ChatViewModel @Inject constructor(
                             put("user_id", newUserId)
                         },
                     )
+                    val addedUser = _userProfiles.value[newUserId]
+                    val systemText = "${addedUser?.name ?: "A member"} was added to the group"
+                    runCatching {
+                        db.from("messages").insert(
+                            buildJsonObject {
+                                put("conversation_id", conversationId)
+                                put("user_from", userId)
+                                put("text", systemText)
+                                put("message_type", "system")
+                            }
+                        )
+                    }
                     loadConversation(conversationId)
                 }
             }
@@ -684,6 +696,15 @@ class ChatViewModel @Inject constructor(
                 loadMessages(conversationId)
             }.onFailure {
                 if (!insertOk) _messages.update { it.filter { msg -> msg.id != tempId } }
+            }
+            // Update conversation list preview for own sent message
+            _conversations.update { list ->
+                list.map { p ->
+                    if (p.conversation.id == conversationId) {
+                        val lastMsg = _messages.value.lastOrNull { it.conversationId == conversationId }
+                        if (lastMsg != null) p.copy(lastMessage = lastMsg, lastSenderName = "You") else p
+                    } else p
+                }
             }
         }
 

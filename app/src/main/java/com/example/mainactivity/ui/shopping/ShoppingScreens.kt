@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -198,6 +199,11 @@ fun ShoppingDetailScreen(
     var showRename by remember { mutableStateOf(false) }
     var showChangeIcon by remember { mutableStateOf(false) }
     val remaining = items.count { !it.checked }
+    val sortedItems = remember(items) { items.sortedWith(compareBy { it.checked }) }
+    val listState = rememberLazyListState()
+    LaunchedEffect(sortedItems.size) {
+        if (sortedItems.isNotEmpty()) listState.animateScrollToItem(sortedItems.lastIndex)
+    }
 
     fun addItem() {
         val text = newItemText.trim()
@@ -287,11 +293,12 @@ fun ShoppingDetailScreen(
             }
         } else {
             LazyColumn(
-                Modifier.fillMaxSize().padding(padding),
+                state = listState,
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(items, key = { it.id }) { item -> ShoppingItemRow(item, viewModel) }
+                items(sortedItems, key = { it.id }) { item -> ShoppingItemRow(item, viewModel) }
             }
         }
     }

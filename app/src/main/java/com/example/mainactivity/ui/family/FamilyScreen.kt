@@ -76,7 +76,6 @@ fun FamilyScreen(
     var showCreate by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
-    var showEditFamily by remember { mutableStateOf(false) }
     var memberToRemove by remember { mutableStateOf<UserModel?>(null) }
 
     val isAdmin = family != null && family!!.adminId == currentUser?.id
@@ -147,7 +146,6 @@ fun FamilyScreen(
                 // Family header card
                 item {
                     Surface(
-                        onClick = { showEditFamily = true },
                         shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 2.dp,
@@ -272,19 +270,6 @@ fun FamilyScreen(
                 showCreate = false
             },
             generateCode = { viewModel.generateJoinCode() },
-        )
-    }
-
-    if (showEditFamily && family != null) {
-        EditFamilyDialog(
-            initialName = family!!.name,
-            joinCode = family!!.joinCode,
-            isAdmin = isAdmin,
-            onDismiss = { showEditFamily = false },
-            onSave = { newName ->
-                viewModel.renameFamily(newName)
-                showEditFamily = false
-            },
         )
     }
 
@@ -468,44 +453,3 @@ private fun CreateFamilyDialog(
     )
 }
 
-@Composable
-private fun EditFamilyDialog(
-    initialName: String,
-    joinCode: String,
-    isAdmin: Boolean,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var name by remember { mutableStateOf(initialName) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        title = { Text("Family settings") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                FamilyTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Family name",
-                    enabled = isAdmin,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                CopyableCodeField(code = joinCode)
-            }
-        },
-        confirmButton = {
-            if (isAdmin) {
-                TextButton(
-                    onClick = { onSave(name) },
-                    enabled = name.isNotBlank(),
-                ) {
-                    Text("Save")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
-        },
-    )
-}

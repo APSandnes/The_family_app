@@ -41,6 +41,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        androidx.core.app.NotificationManagerCompat.from(this).cancelAll()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleAuthDeepLink(intent)

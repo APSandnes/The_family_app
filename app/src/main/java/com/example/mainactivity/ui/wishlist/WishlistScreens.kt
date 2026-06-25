@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -218,6 +221,12 @@ fun WishlistDetailScreen(
     var showRenameDialog by remember { mutableStateOf(false) }
     var showChangeIconDialog by remember { mutableStateOf(false) }
 
+    val sortedWishes = remember(wishes) { wishes.sortedWith(compareBy { it.checked }) }
+    val listState = rememberLazyListState()
+    LaunchedEffect(sortedWishes.size) {
+        if (sortedWishes.isNotEmpty()) listState.animateScrollToItem(sortedWishes.lastIndex)
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -247,71 +256,7 @@ fun WishlistDetailScreen(
                 },
             )
         },
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            if (wishes.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    EmptyState(Icons.Filled.Redeem, "No wishes yet", "Add wishes to this list")
-                }
-            } else {
-                LazyColumn(
-                    Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    items(wishes, key = { it.id }) { wish ->
-                        SwipeToRevealDelete(onDelete = { viewModel.deleteWish(wish) }, shape = RoundedCornerShape(16.dp)) {
-                            Surface(
-                                onClick = { viewModel.toggle(wish) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .semantics {
-                                            contentDescription = "${wish.text}, ${if (wish.checked) "claimed" else "unclaimed"}"
-                                        },
-                            ) {
-                                Row(
-                                    Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    IconButton(onClick = { viewModel.toggle(wish) }) {
-                                        Icon(
-                                            if (wish.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                                            contentDescription = if (wish.checked) "Unmark as claimed" else "Mark as claimed",
-                                            tint =
-                                                if (wish.checked) {
-                                                    MaterialTheme.colorScheme.primary
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                                },
-                                        )
-                                    }
-                                    Text(
-                                        wish.text,
-                                        Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color =
-                                            if (wish.checked) {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurface
-                                            },
-                                        textDecoration = if (wish.checked) TextDecoration.LineThrough else TextDecoration.None,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Bottom input bar
+        bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp,
@@ -321,6 +266,7 @@ fun WishlistDetailScreen(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .navigationBarsPadding()
                             .imePadding(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -353,6 +299,65 @@ fun WishlistDetailScreen(
                                     MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                         )
+                    }
+                }
+            }
+        },
+    ) { padding ->
+        if (sortedWishes.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                EmptyState(Icons.Filled.Redeem, "No wishes yet", "Add wishes to this list")
+            }
+        } else {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(padding),
+                state = listState,
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(sortedWishes, key = { it.id }) { wish ->
+                    SwipeToRevealDelete(onDelete = { viewModel.deleteWish(wish) }, shape = RoundedCornerShape(16.dp)) {
+                        Surface(
+                            onClick = { viewModel.toggle(wish) },
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .semantics {
+                                        contentDescription = "${wish.text}, ${if (wish.checked) "claimed" else "unclaimed"}"
+                                    },
+                        ) {
+                            Row(
+                                Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(onClick = { viewModel.toggle(wish) }) {
+                                    Icon(
+                                        if (wish.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                                        contentDescription = if (wish.checked) "Unmark as claimed" else "Mark as claimed",
+                                        tint =
+                                            if (wish.checked) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                    )
+                                }
+                                Text(
+                                    wish.text,
+                                    Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color =
+                                        if (wish.checked) {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
+                                    textDecoration = if (wish.checked) TextDecoration.LineThrough else TextDecoration.None,
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -435,6 +435,7 @@ fun ConversationScreen(
     var showAddMember by remember { mutableStateOf(false) }
     var showRemoveMember by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showMembers by remember { mutableStateOf(false) }
 
     // Voice recording state
     var isRecording by remember { mutableStateOf(false) }
@@ -502,14 +503,25 @@ fun ConversationScreen(
             if (granted) viewModel.prepareCameraCapture(context, conversationId)?.let { cameraLauncher.launch(it) }
         }
 
+    val audioPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) startRecording()
+        }
+
     // Message media launchers (new — for sending images in chat)
     val msgGalleryLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
             uri ?: return@rememberLauncherForActivityResult
-            val bytes = context.contentResolver.openInputStream(uri)?.readBytes() ?: return@rememberLauncherForActivityResult
-            viewModel.sendImage(conversationId, bytes, "img_${System.currentTimeMillis()}.jpg")
+            scope.launch {
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.readBytes()
+                } ?: return@launch
+                viewModel.sendImage(conversationId, bytes, "img_${System.currentTimeMillis()}.jpg")
+            }
         }
 
     val msgCameraLauncher =
@@ -620,6 +632,16 @@ fun ConversationScreen(
                                     onClick = {
                                         showMenu = false
                                         showRemoveMember = true
+                                    },
+                                )
+                            }
+                            if (isGroup) {
+                                DropdownMenuItem(
+                                    text = { Text("Members") },
+                                    leadingIcon = { Icon(Icons.Filled.GroupAdd, null, tint = MaterialTheme.colorScheme.primary) },
+                                    onClick = {
+                                        showMenu = false
+                                        showMembers = true
                                     },
                                 )
                             }
@@ -804,9 +826,17 @@ fun ConversationScreen(
                                             Modifier.pointerInput(Unit) {
                                                 detectTapGestures(
                                                     onPress = {
-                                                        startRecording()
-                                                        tryAwaitRelease()
-                                                        stopRecording(true)
+                                                        val permission = android.Manifest.permission.RECORD_AUDIO
+                                                        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                                            context, permission
+                                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                                        if (hasPermission) {
+                                                            startRecording()
+                                                            tryAwaitRelease()
+                                                            stopRecording(true)
+                                                        } else {
+                                                            audioPermissionLauncher.launch(permission)
+                                                        }
                                                     },
                                                 )
                                             },
@@ -982,6 +1012,13 @@ fun ConversationScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
             },
+        )
+    }
+
+    if (showMembers) {
+        MembersSheet(
+            participants = currentParticipants,
+            onDismiss = { showMembers = false },
         )
     }
 }
@@ -1273,6 +1310,11 @@ private fun MessageRow(
     onReact: (String) -> Unit,
     accessibilityDescription: String = "",
 ) {
+    if (msg.messageType == "system") {
+        MessageContent(msg, mine = false, myId = myId, messages = messages)
+        return
+    }
+
     var showTime by remember { mutableStateOf(false) }
     var showReactionPicker by remember { mutableStateOf(false) }
     val myReaction = reactions.entries.find { myId != null && myId in it.value }?.key
@@ -1438,6 +1480,21 @@ private fun MessageContent(
                 VoiceNoteMessage(url = msg.mediaUrl ?: "", isMine = mine)
             }
         }
+        "system" -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp, horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    msg.text,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        }
         else -> {
             Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                 if (msg.replyToId != null) {
@@ -1588,4 +1645,44 @@ private fun GroupImagePickerDialog(
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MembersSheet(
+    participants: List<com.example.mainactivity.data.UserModel>,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                "Members (${participants.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+            participants.forEach { member ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val color = Color(member.avatarColor.takeIf { it != 0 } ?: 0xFF6366F1.toInt())
+                    InitialAvatar(name = member.name, color = color, size = 40, avatarUri = member.avatarUrl)
+                    Spacer(Modifier.width(12.dp))
+                    Text(member.name, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+    }
 }

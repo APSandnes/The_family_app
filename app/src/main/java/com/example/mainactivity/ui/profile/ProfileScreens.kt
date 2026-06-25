@@ -60,6 +60,7 @@ import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.PrimaryButton
+import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.theme.heroGradient
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -77,6 +78,8 @@ fun ProfileScreen(
     val context = LocalContext.current
 
     var showAvatarPicker by remember { mutableStateOf(false) }
+
+    RefreshOnResume { viewModel.refresh() }
 
     val galleryLauncher =
         rememberLauncherForActivityResult(

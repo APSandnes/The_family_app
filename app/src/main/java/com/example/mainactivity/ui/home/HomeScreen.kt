@@ -125,7 +125,7 @@ fun HomeScreen(
             isLandscape && isTablet -> 2.2f // tablet landscape: very wide tiles
             isLandscape -> 1.5f // phone landscape
             isTablet -> 1.4f // tablet portrait: wide tiles, 3 rows fit
-            else -> 1.05f // phone portrait
+            else -> 1.3f // phone portrait
         }
 
     LazyVerticalGrid(
