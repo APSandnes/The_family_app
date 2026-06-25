@@ -362,7 +362,7 @@ fun MealScreen(
                 EmptyState(
                     Icons.Filled.Restaurant,
                     "No meal plans yet",
-                    "No meal plans yet. Plan your family's meals!",
+                    "No meal plans yet. Start planning!",
                 )
             }
         } else {
@@ -423,7 +423,7 @@ fun MealScreen(
                                     )
                                     Text(
                                         dateRange,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
@@ -618,7 +618,7 @@ fun MealDetailScreen(
                                 }
                             } else {
                                 Text(
-                                    text = if (day.food.isBlank()) "No meal planned" else day.food,
+                                    text = if (day.food.isBlank()) "Tap to add meal" else day.food,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = if (day.food.isBlank()) {
                                         MaterialTheme.colorScheme.onSurfaceVariant
