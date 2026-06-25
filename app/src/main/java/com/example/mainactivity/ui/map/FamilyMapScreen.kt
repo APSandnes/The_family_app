@@ -436,7 +436,10 @@ private fun formatLastSeen(updatedAt: String?): String {
     updatedAt ?: return "Unknown"
     return try {
         val instant = java.time.Instant.parse(updatedAt)
-        val seconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
+        val seconds =
+            java.time.Duration
+                .between(instant, java.time.Instant.now())
+                .seconds
         when {
             seconds < 60 -> "Just now" // also handles clock-skew futures (negative seconds)
             seconds < 3600 -> "${seconds / 60} min ago"
@@ -445,7 +448,10 @@ private fun formatLastSeen(updatedAt: String?): String {
                 instant
                     .atZone(java.time.ZoneId.systemDefault())
                     .toLocalDate()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))
+                    .format(
+                        java.time.format.DateTimeFormatter
+                            .ofPattern("MMM d, yyyy"),
+                    )
         }
     } catch (_: Exception) {
         "Unknown"

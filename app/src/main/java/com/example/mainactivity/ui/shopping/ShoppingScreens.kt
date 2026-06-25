@@ -83,22 +83,26 @@ import com.example.mainactivity.ui.components.PillTag
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
-private data class ShoppingIconOption(val key: String, val vector: ImageVector)
-
-private val SHOPPING_ICON_OPTIONS = listOf(
-    ShoppingIconOption("shopping_cart", Icons.Filled.ShoppingCart),
-    ShoppingIconOption("restaurant", Icons.Filled.Restaurant),
-    ShoppingIconOption("cake", Icons.Filled.Cake),
-    ShoppingIconOption("local_hospital", Icons.Filled.LocalHospital),
-    ShoppingIconOption("celebration", Icons.Filled.Celebration),
-    ShoppingIconOption("favorite", Icons.Filled.Favorite),
-    ShoppingIconOption("star", Icons.Filled.Star),
-    ShoppingIconOption("fitness_center", Icons.Filled.FitnessCenter),
-    ShoppingIconOption("home", Icons.Filled.Home),
-    ShoppingIconOption("pets", Icons.Filled.Pets),
-    ShoppingIconOption("flight", Icons.Filled.Flight),
-    ShoppingIconOption("people", Icons.Filled.People),
+private data class ShoppingIconOption(
+    val key: String,
+    val vector: ImageVector,
 )
+
+private val SHOPPING_ICON_OPTIONS =
+    listOf(
+        ShoppingIconOption("shopping_cart", Icons.Filled.ShoppingCart),
+        ShoppingIconOption("restaurant", Icons.Filled.Restaurant),
+        ShoppingIconOption("cake", Icons.Filled.Cake),
+        ShoppingIconOption("local_hospital", Icons.Filled.LocalHospital),
+        ShoppingIconOption("celebration", Icons.Filled.Celebration),
+        ShoppingIconOption("favorite", Icons.Filled.Favorite),
+        ShoppingIconOption("star", Icons.Filled.Star),
+        ShoppingIconOption("fitness_center", Icons.Filled.FitnessCenter),
+        ShoppingIconOption("home", Icons.Filled.Home),
+        ShoppingIconOption("pets", Icons.Filled.Pets),
+        ShoppingIconOption("flight", Icons.Filled.Flight),
+        ShoppingIconOption("people", Icons.Filled.People),
+    )
 
 private fun shoppingIconVector(key: String): ImageVector =
     SHOPPING_ICON_OPTIONS.firstOrNull { it.key == key }?.vector ?: Icons.Filled.ShoppingCart
@@ -359,24 +363,27 @@ private fun ShoppingItemRow(
                     BasicTextField(
                         value = editText,
                         onValueChange = { editText = it },
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurface,
-                        ),
+                        textStyle =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { commitEdit() }),
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester)
-                            .onFocusChanged { if (!it.isFocused) commitEdit() },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .focusRequester(focusRequester)
+                                .onFocusChanged { if (!it.isFocused) commitEdit() },
                     )
                 } else {
                     Text(
                         item.item,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { isEditing = true },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .clickable { isEditing = true },
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (item.checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         textDecoration = if (item.checked) TextDecoration.LineThrough else TextDecoration.None,

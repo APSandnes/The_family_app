@@ -391,8 +391,18 @@ private fun DayCell(
             MaterialTheme.colorScheme.secondaryContainer,
         )
 
-    val dayName = date?.dayOfWeek?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: ""
-    val monthName = date?.month?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: ""
+    val dayName =
+        date
+            ?.dayOfWeek
+            ?.name
+            ?.lowercase()
+            ?.replaceFirstChar { it.uppercase() } ?: ""
+    val monthName =
+        date
+            ?.month
+            ?.name
+            ?.lowercase()
+            ?.replaceFirstChar { it.uppercase() } ?: ""
     val eventCount = eventIcons.size
     val a11yDesc =
         if (date != null) {

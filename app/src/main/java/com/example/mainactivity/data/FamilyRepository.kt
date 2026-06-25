@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 
 @Singleton
 class FamilyRepository @Inject constructor(
@@ -372,11 +373,15 @@ class FamilyRepository @Inject constructor(
         }
     }
 
-    suspend fun renameFamily(familyId: String, newName: String): Result<Unit> = runCatching {
-        SupabaseManager.client.postgrest.from("families").update({
-            set("name", newName.trim())
-        }) { filter { eq("id", familyId) } }
-    }
+    suspend fun renameFamily(
+        familyId: String,
+        newName: String,
+    ): Result<Unit> =
+        runCatching {
+            SupabaseManager.client.postgrest.from("families").update({
+                set("name", newName.trim())
+            }) { filter { eq("id", familyId) } }
+        }
 
     // ---- Chat ----
 
@@ -387,8 +392,7 @@ class FamilyRepository @Inject constructor(
                 .select {
                     filter { eq("conversation_id", conversationId) }
                     order("sent_at", Order.DESCENDING)
-                }
-                .decodeList<MessageModel>()
+                }.decodeList<MessageModel>()
                 .firstOrNull()
         }.getOrNull()
 
@@ -406,7 +410,10 @@ class FamilyRepository @Inject constructor(
         }
     }
 
-    suspend fun sendMessage(conversationId: String, text: String): Result<Unit> =
+    suspend fun sendMessage(
+        conversationId: String,
+        text: String,
+    ): Result<Unit> =
         runCatching {
             val userId = currentUserId.first() ?: error("Not signed in")
             SupabaseManager.client.postgrest
@@ -459,7 +466,10 @@ class FamilyRepository @Inject constructor(
         filename: String,
     ): String {
         val authUid =
-            SupabaseManager.client.auth.currentSessionOrNull()?.user?.id
+            SupabaseManager.client.auth
+                .currentSessionOrNull()
+                ?.user
+                ?.id
                 ?: error("Not authenticated")
         val path = "$conversationId/$authUid/$filename"
         val bucket = SupabaseManager.client.storage.from("chat-media")

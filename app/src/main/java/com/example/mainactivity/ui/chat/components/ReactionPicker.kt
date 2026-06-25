@@ -55,10 +55,11 @@ fun ReactionPickerPopup(
                 ) {
                     QUICK_REACTIONS.forEach { emoji ->
                         Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .clickable { onReact(emoji) },
+                            modifier =
+                                Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onReact(emoji) },
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(emoji, fontSize = 26.sp, textAlign = TextAlign.Center)
@@ -85,13 +86,16 @@ fun ReactionChipsRow(
         reactions.entries.sortedByDescending { it.value.size }.take(5).forEach { (emoji, users) ->
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = if (emoji == myReaction)
-                    MaterialTheme.colorScheme.primaryContainer
-                else
-                    MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .padding(end = 4.dp)
-                    .clickable { onTap(emoji) },
+                color =
+                    if (emoji == myReaction) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                modifier =
+                    Modifier
+                        .padding(end = 4.dp)
+                        .clickable { onTap(emoji) },
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

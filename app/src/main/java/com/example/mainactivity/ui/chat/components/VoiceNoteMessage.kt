@@ -34,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 @Composable
-fun VoiceNoteMessage(url: String, isMine: Boolean) {
+fun VoiceNoteMessage(
+    url: String,
+    isMine: Boolean,
+) {
     var isPlaying by remember { mutableStateOf(false) }
     var progress by remember { mutableFloatStateOf(0f) }
     var durationMs by remember { mutableIntStateOf(0) }
@@ -96,14 +99,19 @@ fun VoiceNoteMessage(url: String, isMine: Boolean) {
     }
 
     val contentColor = if (isMine) Color.White else MaterialTheme.colorScheme.onSurface
-    val trackColor = if (isMine) Color.White.copy(alpha = 0.3f)
-    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+    val trackColor =
+        if (isMine) {
+            Color.White.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        }
     val indicatorColor = if (isMine) Color.White else MaterialTheme.colorScheme.primary
 
     Row(
-        modifier = Modifier
-            .widthIn(min = 180.dp, max = 240.dp)
-            .padding(4.dp),
+        modifier =
+            Modifier
+                .widthIn(min = 180.dp, max = 240.dp)
+                .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = ::togglePlay, modifier = Modifier.size(36.dp)) {
@@ -116,9 +124,10 @@ fun VoiceNoteMessage(url: String, isMine: Boolean) {
         Spacer(Modifier.width(4.dp))
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier
-                .weight(1f)
-                .height(3.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .height(3.dp),
             color = indicatorColor,
             trackColor = trackColor,
         )
