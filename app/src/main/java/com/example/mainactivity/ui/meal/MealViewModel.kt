@@ -163,8 +163,10 @@ class MealViewModel(
                                 .select { filter { eq("meal_plan_id", planId) } }
                                 .decodeList<MealPlanDayModel>()
                         }
-                    _selectedPlan.value = planDeferred.await()
-                    _days.value = daysDeferred.await()
+                    val planResult = planDeferred.await()
+                    val daysResult = daysDeferred.await()
+                    _selectedPlan.value = planResult
+                    _days.value = daysResult
                 }
             }
         }
