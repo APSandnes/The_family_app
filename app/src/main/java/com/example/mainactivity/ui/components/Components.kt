@@ -172,6 +172,8 @@ fun FamilyTextField(
     leadingIcon: ImageVector? = null,
     isPassword: Boolean = false,
     keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+    imeAction: androidx.compose.ui.text.input.ImeAction = androidx.compose.ui.text.input.ImeAction.Default,
+    keyboardActions: androidx.compose.foundation.text.KeyboardActions = androidx.compose.foundation.text.KeyboardActions.Default,
     singleLine: Boolean = true,
     supportingText: String? = null,
     isError: Boolean = false,
@@ -202,7 +204,8 @@ fun FamilyTextField(
         visualTransformation = if (isPassword && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions =
             androidx.compose.foundation.text
-                .KeyboardOptions(keyboardType = keyboardType),
+                .KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+        keyboardActions = keyboardActions,
         supportingText = supportingText?.let { { Text(it) } },
         shape = RoundedCornerShape(16.dp),
         colors =
