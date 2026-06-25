@@ -138,7 +138,15 @@ fun FamilyMapScreen(
                 result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                     result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
             foregroundGranted = granted
-            if (granted) viewModel.startLocationUpdates()
+            if (granted) {
+                viewModel.startLocationUpdates()
+                if (backgroundGranted && !LocationForegroundService.isRunning) {
+                    ContextCompat.startForegroundService(
+                        context,
+                        Intent(context, LocationForegroundService::class.java),
+                    )
+                }
+            }
         }
 
     val bgLauncher =
@@ -501,7 +509,7 @@ private fun MemberLegend(
             )
             Spacer(Modifier.size(6.dp))
             profiles.values
-                .filter { it.id != currentUserId }
+                .filter { currentUserId != null && it.id != currentUserId }
                 .forEach { member ->
                     val loc = locationByUserId[member.id]
                     val isSharing = loc != null
