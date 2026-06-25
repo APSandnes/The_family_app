@@ -40,6 +40,9 @@ class BirthdayViewModel(
     private var realtimeChannel: RealtimeChannel? = null
     private var currentUserId: String? = null
 
+    /** Tracks which familyId is currently subscribed so subscription is set up only once per family. */
+    private var subscribedFamilyId: String? = null
+
     init {
         viewModelScope.launch {
             repo.currentUserId.collect { userId ->
@@ -60,10 +63,11 @@ class BirthdayViewModel(
     fun refresh() =
         viewModelScope.launch {
             val userId = repo.currentUserId.first() ?: return@launch
-            load(userId)
+            reload(userId)
         }
 
-    private suspend fun load(userId: String) {
+    /** Fetch birthdays without touching the subscription. Safe to call from anywhere. */
+    private suspend fun reload(userId: String) {
         if (_birthdays.value.isEmpty()) _isLoading.value = true
         runCatching {
             val user = repo.getUser(userId)
@@ -90,26 +94,36 @@ class BirthdayViewModel(
                     }
                 cache = result
                 _birthdays.value = result
-                if (user.familyId != null) subscribeToBirthdays(user.familyId, userId)
             }
         }
         _isLoading.value = false
+    }
+
+    /** Full load: reload data then set up realtime subscription (once per family). */
+    private suspend fun load(userId: String) {
+        reload(userId)
+        val user = repo.getUser(userId) ?: return
+        if (user.familyId != null) subscribeToBirthdays(user.familyId, userId)
     }
 
     private suspend fun subscribeToBirthdays(
         familyId: String,
         userId: String,
     ) {
+        // Guard: skip if already subscribed to this family to prevent subscription churn.
+        if (subscribedFamilyId == familyId && realtimeChannel != null) return
         realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
         val channel = SupabaseManager.client.channel("birthdays-$familyId")
         realtimeChannel = channel
+        subscribedFamilyId = familyId
         val flow =
             channel.postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "birthdays"
                 filter("family_id", FilterOperator.EQ, familyId)
             }
         channel.subscribe()
-        viewModelScope.launch { flow.collect { load(userId) } }
+        // Collect events and reload data only — no re-subscription.
+        viewModelScope.launch { flow.collect { reload(userId) } }
     }
 
     override fun onCleared() {
@@ -145,14 +159,33 @@ class BirthdayViewModel(
                     },
                 )
             }
-            load(userId)
+            reload(userId)
         }
+
+    fun update(
+        id: String,
+        name: String,
+        date: String,
+    ) = viewModelScope.launch {
+        // Optimistic update
+        _birthdays.value = _birthdays.value.map { if (it.id == id) it.copy(name = name, date = date) else it }
+        runCatching {
+            db.from("birthdays").update({
+                set("name", name)
+                set("date", date)
+            }) {
+                filter { eq("id", id) }
+            }
+        }
+        val userId = currentUserId ?: repo.currentUserId.first() ?: return@launch
+        reload(userId)
+    }
 
     fun delete(birthday: BirthdayModel) =
         viewModelScope.launch {
             _birthdays.value = _birthdays.value.filter { it.id != birthday.id }
             runCatching { db.from("birthdays").delete { filter { eq("id", birthday.id) } } }
             val userId = repo.currentUserId.first() ?: return@launch
-            load(userId)
+            reload(userId)
         }
 }
