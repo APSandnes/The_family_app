@@ -3,8 +3,11 @@
 package com.example.mainactivity.ui.home
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,20 +35,28 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -53,7 +64,16 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mainactivity.ui.components.InitialAvatar
+import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.theme.Amber500
+import com.example.mainactivity.ui.theme.Emerald500
+import com.example.mainactivity.ui.theme.Indigo500
+import com.example.mainactivity.ui.theme.Pink500
+import com.example.mainactivity.ui.theme.Teal500
+import com.example.mainactivity.ui.theme.Violet500
 import com.example.mainactivity.ui.theme.heroGradient
+import java.util.Calendar
 
 private data class Feature(
     val title: String,
@@ -63,6 +83,15 @@ private data class Feature(
     val route: String,
 )
 
+/** Returns "Good morning", "Good afternoon", or "Good evening" based on the hour. */
+private fun timeBasedGreeting(): String {
+    return when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 0..11 -> "Good morning"
+        in 12..17 -> "Good afternoon"
+        else -> "Good evening"
+    }
+}
+
 @Composable
 fun HomeScreen(
     onOpen: (String) -> Unit,
@@ -70,7 +99,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    val dark = isSystemInDarkTheme()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -84,103 +113,211 @@ fun HomeScreen(
 
     val features =
         listOf(
-            Feature("Shopping", "Shared lists", Icons.Filled.ShoppingCart, Color(0xFF6366F1), "shopping"),
-            Feature("Meals", "Plan the week", Icons.Filled.Restaurant, Color(0xFFF59E0B), "meal"),
-            Feature("Calendar", "Family events", Icons.Filled.CalendarMonth, Color(0xFF14B8A6), "calendar"),
-            Feature("Birthdays", "Never miss one", Icons.Filled.Cake, Color(0xFFEC4899), "birthday"),
-            Feature("Wishlists", "Gift ideas", Icons.Filled.CardGiftcard, Color(0xFF8B5CF6), "wishlist"),
-            Feature("Family Map", "See where everyone is", Icons.Filled.Map, Color(0xFF10B981), "family_map"),
+            Feature("Shopping", "Shared lists", Icons.Filled.ShoppingCart, Indigo500, "shopping"),
+            Feature("Meals", "Plan the week", Icons.Filled.Restaurant, Amber500, "meal"),
+            Feature("Calendar", "Family events", Icons.Filled.CalendarMonth, Teal500, "calendar"),
+            Feature("Birthdays", "Never miss one", Icons.Filled.Cake, Pink500, "birthday"),
+            Feature("Wishlists", "Gift ideas", Icons.Filled.CardGiftcard, Violet500, "wishlist"),
+            Feature("Family Map", "See where everyone is", Icons.Filled.Map, Emerald500, "family_map"),
         )
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Use screenWidthDp to match WindowWidthSizeClass.Compact boundary (< 600dp = phone portrait)
+    val isWideWindow = configuration.screenWidthDp >= 600
     val isTablet = configuration.smallestScreenWidthDp >= 600
-    // Portrait=2 cols, landscape=3 cols on all form factors
-    val columns = if (isLandscape) 3 else 2
+    // Compact width: 2 columns. Medium/Expanded (wide window): 3 columns.
+    val columns = if (isWideWindow) 3 else 2
+    val horizontalPadding = if (isTablet) 32.dp else 20.dp
+
     // Tiles must be shorter on larger screens so all 6 fit without scrolling
     val tileAspectRatio =
         when {
             isLandscape && isTablet -> 2.2f // tablet landscape: very wide tiles
-            isLandscape -> 1.5f // phone landscape
-            isTablet -> 1.4f // tablet portrait: wide tiles, 3 rows fit
-            else -> 1.05f // phone portrait
+            isLandscape -> 1.5f             // phone landscape
+            isTablet -> 1.4f               // tablet portrait: wide tiles, 3 rows fit
+            else -> 1.05f                   // phone portrait
         }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(),
-        contentPadding = PaddingValues(20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+        contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column {
-                val greeting =
-                    state.user
-                        ?.name
-                        ?.substringBefore(' ')
-                        .orEmpty()
-                Text(
-                    "Hi${if (greeting.isNotBlank()) ", $greeting" else ""} 👋",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    "Here's everything your family shares.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-                FamilyCard(
-                    familyName = state.family?.name,
-                    memberCount = state.memberCount,
+                HomeHeader(
+                    state = state,
                     dark = dark,
-                    onClick = onOpenFamily,
+                    onOpenFamily = onOpenFamily,
                 )
                 Spacer(Modifier.height(6.dp))
             }
         }
-        items(features) { feature ->
-            FeatureTile(feature, aspectRatio = tileAspectRatio, onClick = { onOpen(feature.route) })
+
+        // Loading skeleton while user data is not yet available
+        if (state.user == null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                LoadingState()
+            }
+        } else {
+            items(features) { feature ->
+                FeatureTile(
+                    feature = feature,
+                    aspectRatio = tileAspectRatio,
+                    onClick = { onOpen(feature.route) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeHeader(
+    state: HomeUiState,
+    dark: Boolean,
+    onOpenFamily: () -> Unit,
+) {
+    val user = state.user
+    val firstName = user?.name?.substringBefore(' ').orEmpty()
+    val greeting = timeBasedGreeting()
+
+    Column {
+        // Greeting row with avatar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (firstName.isNotBlank()) "$greeting, $firstName" else greeting,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = "Here's everything your family shares.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (user != null) {
+                Spacer(Modifier.size(12.dp))
+                InitialAvatar(
+                    name = user.name,
+                    color = Color(user.avatarColor),
+                    avatarUri = user.avatarUrl,
+                    size = 48,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Family card — gradient hero card if family exists, CTA banner if signed-in but no family,
+        // or nothing while still loading (user == null)
+        when {
+            user != null && state.family != null -> FamilyCard(
+                familyName = state.family.name,
+                memberCount = state.memberCount,
+                dark = dark,
+                onClick = onOpenFamily,
+            )
+            user != null && state.family == null -> NoFamilyBanner(onOpenFamily = onOpenFamily)
+            // user == null → still loading; LoadingState is shown in the grid below
         }
     }
 }
 
 @Composable
 private fun FamilyCard(
-    familyName: String?,
+    familyName: String,
     memberCount: Int,
     dark: Boolean,
     onClick: () -> Unit,
 ) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
-            .background(heroGradient(dark))
-            .clickable { onClick() }
-            .padding(20.dp),
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = Color.Transparent,
+        shadowElevation = 4.dp,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(52.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Groups, null, tint = Color.White, modifier = Modifier.size(28.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(26.dp))
+                .background(heroGradient(dark))
+                .padding(20.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Filled.Groups, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                }
+                Spacer(Modifier.size(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = familyName,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "$memberCount member${if (memberCount == 1) "" else "s"}",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
-            Spacer(Modifier.size(14.dp))
-            Column(Modifier.weight(1f)) {
+        }
+    }
+}
+
+@Composable
+private fun NoFamilyBanner(onOpenFamily: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 1.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    familyName ?: "Set up your family",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    text = "No family yet",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    if (familyName != null) "$memberCount member${if (memberCount == 1) "" else "s"}" else "Create or join a family group",
-                    color = Color.White.copy(alpha = 0.85f),
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Join or create a family to get started",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
+            }
+            TextButton(
+                onClick = onOpenFamily,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
+                Text("Get started", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -192,10 +329,25 @@ private fun FeatureTile(
     aspectRatio: Float,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        label = "tile-press",
+    )
+
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().aspectRatio(aspectRatio),
-        shape = RoundedCornerShape(24.dp),
+        interactionSource = interactionSource,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(aspectRatio)
+            .scale(scale)
+            .semantics {
+                role = Role.Button
+                contentDescription = "${feature.title} feature"
+            },
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         shadowElevation = 2.dp,
@@ -208,11 +360,20 @@ private fun FeatureTile(
                     .background(Brush.linearGradient(listOf(feature.color, feature.color.copy(alpha = 0.7f)))),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(feature.icon, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                Icon(feature.icon, null, tint = Color.White, modifier = Modifier.size(32.dp))
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(feature.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
-                Text(feature.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = feature.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = feature.subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
