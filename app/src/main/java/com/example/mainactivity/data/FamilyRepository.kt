@@ -365,6 +365,13 @@ class FamilyRepository(
         }
     }
 
+    /** Remove a family member by clearing their family_id. Admin-only in the UI. */
+    suspend fun removeFamilyMember(memberId: String): Result<Unit> = runCatching {
+        SupabaseManager.client.postgrest.from("users").update({
+            set("family_id", null as String?)
+        }) { filter { eq("id", memberId) } }
+    }
+
     suspend fun renameFamily(familyId: String, newName: String): Result<Unit> = runCatching {
         SupabaseManager.client.postgrest.from("families").update({
             set("name", newName.trim())
