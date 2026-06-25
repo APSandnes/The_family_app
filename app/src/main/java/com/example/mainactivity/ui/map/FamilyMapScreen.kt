@@ -24,14 +24,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOff
-import androidx.compose.material.icons.filled.PersonPin
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.PeopleAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,11 +44,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -55,8 +66,11 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
+import com.example.mainactivity.data.UserLocationModel
 import com.example.mainactivity.data.UserModel
+import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
+import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.LoadingState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -68,6 +82,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -81,7 +96,10 @@ fun FamilyMapScreen(
     val locations by viewModel.locations.collectAsStateWithLifecycle()
     val userProfiles by viewModel.userProfiles.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val cameraPositionState = rememberCameraPositionState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val markerBitmaps = remember { mutableStateMapOf<String, BitmapDescriptor>() }
     val markerSizePx = remember(density) { (72 * density).toInt() }
@@ -108,6 +126,8 @@ fun FamilyMapScreen(
 
     var foregroundGranted by remember { mutableStateOf(fgGranted()) }
     var backgroundGranted by remember { mutableStateOf(bgGranted()) }
+    var rationaleShown by remember { mutableStateOf(false) }
+    var showRationaleDialog by remember { mutableStateOf(false) }
 
     val fgLauncher =
         rememberLauncherForActivityResult(
@@ -133,6 +153,44 @@ fun FamilyMapScreen(
             }
         }
 
+    // Show permission rationale dialog once per session before requesting location
+    if (showRationaleDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showRationaleDialog = false
+                rationaleShown = true
+            },
+            title = { Text("Location access") },
+            text = {
+                Text(
+                    "This app uses your location to show your family where you are on the map. " +
+                        "Your location is only shared when you enable it.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRationaleDialog = false
+                    rationaleShown = true
+                    fgLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                }) { Text("Allow") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRationaleDialog = false
+                    rationaleShown = true
+                    scope.launch {
+                        snackbarHostState.showSnackbar("You can enable location in Settings")
+                    }
+                }) { Text("Not now") }
+            },
+        )
+    }
+
     LaunchedEffect(Unit) {
         if (foregroundGranted) {
             viewModel.startLocationUpdates()
@@ -142,13 +200,8 @@ fun FamilyMapScreen(
                     Intent(context, LocationForegroundService::class.java),
                 )
             }
-        } else {
-            fgLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                ),
-            )
+        } else if (!rationaleShown) {
+            showRationaleDialog = true
         }
     }
 
@@ -156,15 +209,21 @@ fun FamilyMapScreen(
         myLocation?.let { cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(it, 14f)) }
     }
 
-    // Build marker bitmaps whenever locations or profiles change
+    // Build marker bitmaps for visible locations only
     LaunchedEffect(userProfiles, locations) {
-        locations.forEach { loc ->
+        val visibleLocations = locations.filter { it.visible }
+        visibleLocations.forEach { loc ->
             val profile = userProfiles[loc.userId]
             val bitmap =
                 withContext(Dispatchers.Default) {
                     buildMarkerBitmap(context, profile, loc.displayName, markerSizePx)
                 }
             markerBitmaps[loc.userId] = BitmapDescriptorFactory.fromBitmap(bitmap)
+        }
+        // Remove stale bitmaps for users no longer visible
+        val visibleIds = visibleLocations.map { it.userId }.toSet()
+        markerBitmaps.keys.toList().forEach { key ->
+            if (key !in visibleIds) markerBitmaps.remove(key)
         }
     }
 
@@ -175,20 +234,27 @@ fun FamilyMapScreen(
         }
     }
 
+    val isSolo = userProfiles.size == 1
+    val hasOtherMembers = userProfiles.size >= 2
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Family Map", onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (isLoading && locations.isEmpty()) {
+            if (isLoading && locations.isEmpty() && !isSolo) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingState() }
             } else {
                 GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .semantics { contentDescription = "Family location map" },
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(isMyLocationEnabled = foregroundGranted),
                 ) {
-                    locations.forEach { loc ->
+                    locations.filter { it.visible }.forEach { loc ->
                         Marker(
                             state = rememberUpdatedMarkerState(position = LatLng(loc.lat, loc.lng)),
                             title = loc.displayName,
@@ -197,44 +263,69 @@ fun FamilyMapScreen(
                     }
                 }
 
+                // Empty state overlay when current user is the only family member
+                if (isSolo) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        EmptyState(
+                            icon = Icons.Filled.PeopleAlt,
+                            title = "Just you here",
+                            subtitle = "Invite family members to see their locations on the map.",
+                        )
+                    }
+                }
+
+                // Bottom-right column: My Location FAB stacked above optional cards
                 Column(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    horizontalAlignment = Alignment.End,
                 ) {
+                    FloatingActionButton(
+                        onClick = {
+                            scope.launch {
+                                myLocation?.let {
+                                    cameraPositionState.animate(
+                                        CameraUpdateFactory.newLatLngZoom(it, 15f),
+                                    )
+                                }
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Icon(Icons.Filled.MyLocation, contentDescription = "Center on my location")
+                    }
+
                     if (foregroundGranted &&
                         !backgroundGranted &&
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                     ) {
+                        Spacer(Modifier.size(8.dp))
                         BackgroundPermissionCard(
                             onRequest = {
                                 bgLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                             },
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        Spacer(Modifier.size(8.dp))
                     }
 
-                    if (locations.isNotEmpty()) {
-                        MemberLegend(names = locations.map { it.displayName })
-                    } else if (foregroundGranted) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        ) {
-                            Row(
-                                Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(Icons.Filled.LocationOff, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.size(8.dp))
-                                Text(
-                                    "No family members sharing location",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
+                    if (hasOtherMembers) {
+                        Spacer(Modifier.size(8.dp))
+                        MemberLegend(
+                            locations = locations,
+                            profiles = userProfiles,
+                            currentUserId = currentUserId,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
             }
@@ -334,12 +425,36 @@ private suspend fun loadCircularBitmap(
     }
 }
 
+/** Formats an ISO-8601 timestamp as a human-readable "last seen" string. */
+private fun formatLastSeen(updatedAt: String?): String {
+    updatedAt ?: return "Unknown"
+    return try {
+        val instant = java.time.Instant.parse(updatedAt)
+        val seconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
+        when {
+            seconds < 60 -> "Just now"
+            seconds < 3600 -> "${seconds / 60} min ago"
+            seconds < 86400 -> "${seconds / 3600} hours ago"
+            else ->
+                instant
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy"))
+        }
+    } catch (_: Exception) {
+        "Unknown"
+    }
+}
+
 @Composable
-private fun BackgroundPermissionCard(onRequest: () -> Unit) {
+private fun BackgroundPermissionCard(
+    onRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
         Row(
             Modifier.padding(14.dp),
@@ -366,14 +481,18 @@ private fun BackgroundPermissionCard(onRequest: () -> Unit) {
 
 @Composable
 private fun MemberLegend(
-    names: List<String>,
+    locations: List<UserLocationModel>,
+    profiles: Map<String, UserModel>,
+    currentUserId: String?,
     modifier: Modifier = Modifier,
 ) {
+    val locationByUserId = locations.associateBy { it.userId }
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
         shadowElevation = 2.dp,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
@@ -383,21 +502,55 @@ private fun MemberLegend(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.size(6.dp))
-            names.forEach { name ->
-                Row(
-                    Modifier.padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Filled.PersonPin,
-                        null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+            profiles.values
+                .filter { it.id != currentUserId }
+                .forEach { member ->
+                    val loc = locationByUserId[member.id]
+                    val isSharing = loc != null
+                    val rowAlpha = if (isSharing) 1f else 0.4f
+                    val statusText = if (isSharing) formatLastSeen(loc?.updatedAt) else "Not sharing"
+                    val avatarColor =
+                        member.avatarColor
+                            .takeIf { it != 0 }
+                            ?.let { Color(it) }
+                            ?: MaterialTheme.colorScheme.primary
+                    val rowDesc =
+                        if (isSharing) {
+                            "${member.name}, last seen $statusText"
+                        } else {
+                            "${member.name}, location hidden"
+                        }
+
+                    Row(
+                        modifier =
+                            Modifier
+                                .padding(vertical = 4.dp)
+                                .fillMaxWidth()
+                                .alpha(rowAlpha)
+                                .clearAndSetSemantics { contentDescription = rowDesc },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        InitialAvatar(
+                            name = member.name,
+                            color = avatarColor,
+                            size = 36,
+                            avatarUri = member.avatarUrl,
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        Column {
+                            Text(
+                                member.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                statusText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
-            }
         }
     }
 }
