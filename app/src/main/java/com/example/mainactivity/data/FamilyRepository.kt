@@ -370,6 +370,8 @@ class FamilyRepository(
         SupabaseManager.client.postgrest.from("users").update({
             set("family_id", null as String?)
         }) { filter { eq("id", memberId) } }
+        invalidateUserCache()
+        _familyChanged.emit(Unit)
     }
 
     suspend fun renameFamily(familyId: String, newName: String): Result<Unit> = runCatching {

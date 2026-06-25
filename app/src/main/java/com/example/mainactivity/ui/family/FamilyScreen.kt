@@ -315,7 +315,7 @@ private fun AvatarStack(members: List<UserModel>) {
     val overlapOffset = 24 // dp each avatar shifts right from previous
     val displayMembers = members.take(4)
     val overflow = members.size - displayMembers.size
-    val totalWidth = (overlapOffset * (displayMembers.size - 1) + avatarSize +
+    val stackWidth = (overlapOffset * (displayMembers.size - 1) + avatarSize +
         (if (overflow > 0) overlapOffset + avatarSize else 0)).dp
 
     val names = members.joinToString(", ") { it.name }
@@ -328,6 +328,7 @@ private fun AvatarStack(members: List<UserModel>) {
 
     Box(
         modifier = Modifier
+            .width(stackWidth)
             .height(avatarSize.dp)
             .semantics { contentDescription = "Family members: $names" },
     ) {

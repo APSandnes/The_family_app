@@ -121,12 +121,12 @@ class FamilyViewModel(
 
     fun removeMember(memberId: String) {
         viewModelScope.launch {
-            runCatching {
-                repo.removeFamilyMember(memberId)
-            }.onSuccess {
-                val userId = repo.currentUserId.first() ?: return@launch
-                load(userId)
-            }.onFailure { _error.value = it.message }
+            repo.removeFamilyMember(memberId)
+                .onSuccess {
+                    val userId = repo.currentUserId.first() ?: return@launch
+                    load(userId)
+                }
+                .onFailure { _error.value = it.message }
         }
     }
 }
