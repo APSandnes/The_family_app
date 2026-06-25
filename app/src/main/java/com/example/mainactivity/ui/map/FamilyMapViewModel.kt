@@ -49,17 +49,19 @@ class FamilyMapViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
     private val fusedClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(app)
     private var locationCallback: LocationCallback? = null
     private var realtimeChannel: RealtimeChannel? = null
-    private var currentUserId: String? = null
     private var currentFamilyId: String? = null
 
     init {
         viewModelScope.launch {
             repo.currentUserId.collect { userId ->
-                currentUserId = userId
+                _currentUserId.value = userId
                 if (userId != null) {
                     val user = repo.getUser(userId)
                     currentFamilyId = user?.familyId
@@ -80,7 +82,7 @@ class FamilyMapViewModel(
 
     private suspend fun loadLocations() {
         val familyId = currentFamilyId ?: return
-        val myId = currentUserId ?: return
+        val myId = _currentUserId.value ?: return
         _isLoading.value = true
         runCatching {
             _locations.value =
@@ -149,7 +151,7 @@ class FamilyMapViewModel(
         lat: Double,
         lng: Double,
     ) {
-        val userId = currentUserId ?: return
+        val userId = _currentUserId.value ?: return
         val locationVisible = repo.locationVisible.first()
         runCatching {
             val user = repo.getUser(userId) ?: return
@@ -173,7 +175,7 @@ class FamilyMapViewModel(
     }
 
     private suspend fun clearOwnLocationSuspend() {
-        val userId = currentUserId ?: return
+        val userId = _currentUserId.value ?: return
         runCatching {
             db.from("user_locations").update({
                 set("visible", false)

@@ -120,6 +120,7 @@ data class UserLocationModel(
     val lng: Double = 0.0,
     @SerialName("display_name") val displayName: String = "",
     val visible: Boolean = false,
+    @SerialName("updated_at") val updatedAt: String? = null,
 )
 
 @Serializable
