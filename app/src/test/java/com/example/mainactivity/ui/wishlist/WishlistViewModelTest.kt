@@ -43,7 +43,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class WishlistViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -388,7 +387,9 @@ class WishlistViewModelTest {
 
             assertFalse(
                 "Wish should be unchecked after two toggles",
-                vm.wishes.value.first { it.id == wish.id }.checked,
+                vm.wishes.value
+                    .first { it.id == wish.id }
+                    .checked,
             )
         }
 

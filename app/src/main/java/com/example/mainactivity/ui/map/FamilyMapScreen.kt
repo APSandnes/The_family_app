@@ -4,7 +4,6 @@ package com.example.mainactivity.ui.map
 
 import android.Manifest
 import android.content.Context
-import android.location.Geocoder
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -12,6 +11,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.location.Geocoder
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -62,8 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -83,10 +83,10 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @Composable
 fun FamilyMapScreen(
@@ -553,7 +553,7 @@ private fun MemberLegend(
                     val loc = locationByUserId[member.id]
                     val isSharing = loc != null
                     val rowAlpha = if (isSharing) 1f else 0.4f
-                    val lastSeen = if (isSharing) formatLastSeen(loc?.updatedAt) else "Not sharing"
+                    val lastSeen = if (isSharing) formatLastSeen(loc.updatedAt) else "Not sharing"
                     val place = places[member.id]
                     val statusText =
                         if (isSharing && !place.isNullOrBlank()) "$place · $lastSeen" else lastSeen

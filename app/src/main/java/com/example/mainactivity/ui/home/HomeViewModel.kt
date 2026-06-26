@@ -56,161 +56,170 @@ private data class HomeSummary(
 )
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    internal val repo: FamilyRepository,
-) : ViewModel() {
-    private val _state = MutableStateFlow(HomeUiState())
-    val state: StateFlow<HomeUiState> = _state.asStateFlow()
+class HomeViewModel
+    @Inject
+    constructor(
+        internal val repo: FamilyRepository,
+    ) : ViewModel() {
+        private val _state = MutableStateFlow(HomeUiState())
+        val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            repo.currentUserId.collect { userId ->
-                if (userId != null) load(userId) else _state.value = HomeUiState(isLoading = false)
+        init {
+            viewModelScope.launch {
+                repo.currentUserId.collect { userId ->
+                    if (userId != null) load(userId) else _state.value = HomeUiState(isLoading = false)
+                }
+            }
+            viewModelScope.launch {
+                repo.familyChanged.collect {
+                    val userId = repo.currentUserId.first() ?: return@collect
+                    load(userId)
+                }
             }
         }
-        viewModelScope.launch {
-            repo.familyChanged.collect {
-                val userId = repo.currentUserId.first() ?: return@collect
+
+        fun refresh() =
+            viewModelScope.launch {
+                val userId = repo.currentUserId.first() ?: return@launch
                 load(userId)
             }
-        }
-    }
 
-    fun refresh() =
-        viewModelScope.launch {
-            val userId = repo.currentUserId.first() ?: return@launch
-            load(userId)
-        }
-
-    private suspend fun load(userId: String) {
-        _state.value = _state.value.copy(isLoading = true, loadError = false)
-        runCatching {
-            val user = repo.getUser(userId)
-            if (user == null) {
-                _state.value = HomeUiState(isLoading = false, loadError = true)
-                return
-            }
-            val family = user.familyId?.let { repo.getFamily(it) }
-            val db = SupabaseManager.client.postgrest
-            val familyId = user.familyId
-            val memberCount =
-                if (familyId != null) {
-                    db.from("users")
-                        .select { filter { eq("family_id", familyId) } }
-                        .decodeList<UserModel>()
-                        .size
-                } else {
-                    0
-                }
-            // Summary is best-effort — a failure here must not blank the whole screen.
-            val summary = if (familyId != null) runCatching { loadSummary(db, familyId) }.getOrDefault(HomeSummary()) else HomeSummary()
-
-            _state.value =
-                HomeUiState(
-                    user = user,
-                    family = family,
-                    memberCount = memberCount,
-                    isLoading = false,
-                    tonightMeal = summary.tonightMeal,
-                    nextEventTitle = summary.nextEventTitle,
-                    nextEventWhen = summary.nextEventWhen,
-                    nextBirthdayName = summary.nextBirthdayName,
-                    nextBirthdayWhen = summary.nextBirthdayWhen,
-                    shoppingRemaining = summary.shoppingRemaining,
-                )
-        }.onFailure {
-            _state.value = _state.value.copy(isLoading = false, loadError = true)
-        }
-    }
-
-    private suspend fun loadSummary(
-        db: Postgrest,
-        familyId: String,
-    ): HomeSummary {
-        val today = LocalDate.now()
-
-        // Tonight's meal: the plan whose range covers today, then today's day row.
-        val tonightMeal =
+        private suspend fun load(userId: String) {
+            _state.value = _state.value.copy(isLoading = true, loadError = false)
             runCatching {
-                val plans =
-                    db.from("meal_plans")
-                        .select { filter { eq("family_id", familyId) } }
-                        .decodeList<MealPlanModel>()
-                val active =
-                    plans.firstOrNull {
-                        val f = runCatching { LocalDate.parse(it.fromDate) }.getOrNull()
-                        val t = runCatching { LocalDate.parse(it.toDate) }.getOrNull()
-                        f != null && t != null && !f.isAfter(today) && !t.isBefore(today)
+                val user = repo.getUser(userId)
+                if (user == null) {
+                    _state.value = HomeUiState(isLoading = false, loadError = true)
+                    return
+                }
+                val family = user.familyId?.let { repo.getFamily(it) }
+                val db = SupabaseManager.client.postgrest
+                val familyId = user.familyId
+                val memberCount =
+                    if (familyId != null) {
+                        db
+                            .from("users")
+                            .select { filter { eq("family_id", familyId) } }
+                            .decodeList<UserModel>()
+                            .size
+                    } else {
+                        0
                     }
-                active?.let { plan ->
-                    db.from("meal_plan_days")
-                        .select {
-                            filter {
-                                eq("meal_plan_id", plan.id)
-                                eq("date", today.toString())
-                            }
-                        }.decodeList<MealPlanDayModel>()
-                        .firstOrNull()
-                        ?.food
-                        ?.takeIf { it.isNotBlank() }
-                }
-            }.getOrNull()
+                // Summary is best-effort — a failure here must not blank the whole screen.
+                val summary = if (familyId != null) runCatching { loadSummary(db, familyId) }.getOrDefault(HomeSummary()) else HomeSummary()
 
-        // Next upcoming event (ends today or later).
-        val event =
-            runCatching {
-                db.from("calendar_events")
-                    .select { filter { eq("family_id", familyId) } }
-                    .decodeList<CalendarEventModel>()
-                    .filter {
-                        val end = runCatching { LocalDate.parse(it.dateTo.ifBlank { it.dateFrom }) }.getOrNull()
-                        end != null && !end.isBefore(today)
-                    }.minByOrNull { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
-            }.getOrNull()
+                _state.value =
+                    HomeUiState(
+                        user = user,
+                        family = family,
+                        memberCount = memberCount,
+                        isLoading = false,
+                        tonightMeal = summary.tonightMeal,
+                        nextEventTitle = summary.nextEventTitle,
+                        nextEventWhen = summary.nextEventWhen,
+                        nextBirthdayName = summary.nextBirthdayName,
+                        nextBirthdayWhen = summary.nextBirthdayWhen,
+                        shoppingRemaining = summary.shoppingRemaining,
+                    )
+            }.onFailure {
+                _state.value = _state.value.copy(isLoading = false, loadError = true)
+            }
+        }
 
-        // Soonest upcoming birthday.
-        val nextB =
-            runCatching {
-                db.from("birthdays")
-                    .select { filter { eq("family_id", familyId) } }
-                    .decodeList<BirthdayModel>()
-            }.getOrNull()
-                .orEmpty()
-                .mapNotNull { b -> nextBirthdayDate(b.date, today)?.let { b to it } }
-                .minByOrNull { it.second }
+        private suspend fun loadSummary(
+            db: Postgrest,
+            familyId: String,
+        ): HomeSummary {
+            val today = LocalDate.now()
 
-        // Items left to buy across all family lists.
-        val remaining =
-            runCatching {
-                val ids =
-                    db.from("shopping_lists")
+            // Tonight's meal: the plan whose range covers today, then today's day row.
+            val tonightMeal =
+                runCatching {
+                    val plans =
+                        db
+                            .from("meal_plans")
+                            .select { filter { eq("family_id", familyId) } }
+                            .decodeList<MealPlanModel>()
+                    val active =
+                        plans.firstOrNull {
+                            val f = runCatching { LocalDate.parse(it.fromDate) }.getOrNull()
+                            val t = runCatching { LocalDate.parse(it.toDate) }.getOrNull()
+                            f != null && t != null && !f.isAfter(today) && !t.isBefore(today)
+                        }
+                    active?.let { plan ->
+                        db
+                            .from("meal_plan_days")
+                            .select {
+                                filter {
+                                    eq("meal_plan_id", plan.id)
+                                    eq("date", today.toString())
+                                }
+                            }.decodeList<MealPlanDayModel>()
+                            .firstOrNull()
+                            ?.food
+                            ?.takeIf { it.isNotBlank() }
+                    }
+                }.getOrNull()
+
+            // Next upcoming event (ends today or later).
+            val event =
+                runCatching {
+                    db
+                        .from("calendar_events")
                         .select { filter { eq("family_id", familyId) } }
-                        .decodeList<ShoppingListModel>()
-                        .map { it.id }
-                if (ids.isEmpty()) {
-                    0
-                } else {
-                    db.from("shopping_items")
-                        .select {
-                            filter {
-                                isIn("list_id", ids)
-                                eq("checked", false)
-                            }
-                        }.decodeList<ShoppingItemModel>()
-                        .size
-                }
-            }.getOrDefault(0)
+                        .decodeList<CalendarEventModel>()
+                        .filter {
+                            val end = runCatching { LocalDate.parse(it.dateTo.ifBlank { it.dateFrom }) }.getOrNull()
+                            end != null && !end.isBefore(today)
+                        }.minByOrNull { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
+                }.getOrNull()
 
-        return HomeSummary(
-            tonightMeal = tonightMeal,
-            nextEventTitle = event?.activity,
-            nextEventWhen = event?.let { eventWhen(it, today) },
-            nextBirthdayName = nextB?.first?.name,
-            nextBirthdayWhen = nextB?.let { birthdayWhen(it.first, it.second, today) },
-            shoppingRemaining = remaining,
-        )
+            // Soonest upcoming birthday.
+            val nextB =
+                runCatching {
+                    db
+                        .from("birthdays")
+                        .select { filter { eq("family_id", familyId) } }
+                        .decodeList<BirthdayModel>()
+                }.getOrNull()
+                    .orEmpty()
+                    .mapNotNull { b -> nextBirthdayDate(b.date, today)?.let { b to it } }
+                    .minByOrNull { it.second }
+
+            // Items left to buy across all family lists.
+            val remaining =
+                runCatching {
+                    val ids =
+                        db
+                            .from("shopping_lists")
+                            .select { filter { eq("family_id", familyId) } }
+                            .decodeList<ShoppingListModel>()
+                            .map { it.id }
+                    if (ids.isEmpty()) {
+                        0
+                    } else {
+                        db
+                            .from("shopping_items")
+                            .select {
+                                filter {
+                                    isIn("list_id", ids)
+                                    eq("checked", false)
+                                }
+                            }.decodeList<ShoppingItemModel>()
+                            .size
+                    }
+                }.getOrDefault(0)
+
+            return HomeSummary(
+                tonightMeal = tonightMeal,
+                nextEventTitle = event?.activity,
+                nextEventWhen = event?.let { eventWhen(it, today) },
+                nextBirthdayName = nextB?.first?.name,
+                nextBirthdayWhen = nextB?.let { birthdayWhen(it.first, it.second, today) },
+                shoppingRemaining = remaining,
+            )
+        }
     }
-}
 
 private val EVENT_DATE_FMT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
 

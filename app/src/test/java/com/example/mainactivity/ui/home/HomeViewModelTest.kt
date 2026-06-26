@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class HomeViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -205,11 +204,21 @@ class HomeViewModelTest {
 
             userId.value = "u1"
             advanceUntilIdle()
-            assertEquals("First user should be Alice", "u1", vm.state.value.user?.id)
+            assertEquals(
+                "First user should be Alice",
+                "u1",
+                vm.state.value.user
+                    ?.id,
+            )
 
             userId.value = "u2"
             advanceUntilIdle()
-            assertEquals("Second user should be Bob", "u2", vm.state.value.user?.id)
+            assertEquals(
+                "Second user should be Bob",
+                "u2",
+                vm.state.value.user
+                    ?.id,
+            )
         }
 
     // -------------------------------------------------------------------------

@@ -71,70 +71,73 @@ fun ImageViewerDialog(
     )
 
     @Suppress("DEPRECATION")
-    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
-        val newScale = (scale * zoomChange).coerceIn(1f, 5f)
-        scale = newScale
-        if (newScale > 1f) {
-            offset += panChange
-        } else {
-            offset = Offset.Zero
+    val transformState =
+        rememberTransformableState { zoomChange, panChange, _ ->
+            val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+            scale = newScale
+            if (newScale > 1f) {
+                offset += panChange
+            } else {
+                offset = Offset.Zero
+            }
         }
-    }
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false,
-        ),
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+            ),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
         ) {
             AsyncImage(
                 model = url,
                 contentDescription = "Full screen image",
                 contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .transformable(state = transformState)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onDoubleTap = {
-                                if (scale > 1f) {
-                                    scale = 1f
-                                    offset = Offset.Zero
-                                } else {
-                                    scale = 2.5f
-                                }
-                            },
-                            onTap = {
-                                if (scale <= 1f) onDismiss()
-                            },
-                        )
-                    }
-                    .graphicsLayer {
-                        scaleX = animatedScale
-                        scaleY = animatedScale
-                        translationX = animatedOffsetX
-                        translationY = animatedOffsetY
-                    },
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .transformable(state = transformState)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    if (scale > 1f) {
+                                        scale = 1f
+                                        offset = Offset.Zero
+                                    } else {
+                                        scale = 2.5f
+                                    }
+                                },
+                                onTap = {
+                                    if (scale <= 1f) onDismiss()
+                                },
+                            )
+                        }.graphicsLayer {
+                            scaleX = animatedScale
+                            scaleY = animatedScale
+                            translationX = animatedOffsetX
+                            translationY = animatedOffsetY
+                        },
             )
 
             // Top action bar
             Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .systemBarsPadding()
-                    .padding(12.dp)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.45f),
-                        shape = RoundedCornerShape(50),
-                    )
-                    .padding(horizontal = 4.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .systemBarsPadding()
+                        .padding(12.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(50),
+                        ).padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(0.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -163,14 +166,19 @@ fun ImageViewerDialog(
     }
 }
 
-private fun downloadImage(context: Context, url: String) {
+private fun downloadImage(
+    context: Context,
+    url: String,
+) {
     try {
         val filename = "family_${System.currentTimeMillis()}.jpg"
-        val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle("Saving image…")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, filename)
-            .setMimeType("image/jpeg")
+        val request =
+            DownloadManager
+                .Request(Uri.parse(url))
+                .setTitle("Saving image…")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, filename)
+                .setMimeType("image/jpeg")
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         dm.enqueue(request)
         Toast.makeText(context, "Saving to gallery…", Toast.LENGTH_SHORT).show()

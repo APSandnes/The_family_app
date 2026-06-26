@@ -15,24 +15,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CardGiftcard
@@ -46,7 +45,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Restaurant
@@ -66,6 +64,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,8 +83,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.mainactivity.data.WishModel
 import com.example.mainactivity.data.WishReservationModel
@@ -151,71 +150,71 @@ fun WishlistScreen(
             onRefresh = { viewModel.refresh().join() },
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-        when {
-            isLoading -> {
-                ListSkeleton(Modifier.fillMaxSize())
-            }
-            wishlists.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    EmptyState(
-                        Icons.Filled.CardGiftcard,
-                        "No wishlists yet",
-                        "Create a wishlist to share with your family",
-                        actionLabel = "New wishlist",
-                        onAction = { showAdd = true },
-                    )
+            when {
+                isLoading -> {
+                    ListSkeleton(Modifier.fillMaxSize())
                 }
-            }
-            else -> {
-                LazyColumn(
-                    Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(wishlists, key = { it.id }) { wl ->
-                        SwipeToRevealDelete(
-                            onDelete = { viewModel.deleteWishlist(wl) },
-                            modifier = Modifier.animateItem(),
-                            shape = RoundedCornerShape(20.dp),
-                        ) {
-                            ListCard(onClick = { onOpen(wl.id) }) {
-                                // Large icon in colored circle
-                                Box(
-                                    Modifier
-                                        .size(52.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        wishlistIconVector(wl.icon),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(28.dp),
-                                    )
-                                }
-                                Spacer(Modifier.width(14.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        wl.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                    if (wl.ownerName.isNotEmpty()) {
-                                        Text(
-                                            "By ${wl.ownerName}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                wishlists.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            Icons.Filled.CardGiftcard,
+                            "No wishlists yet",
+                            "Create a wishlist to share with your family",
+                            actionLabel = "New wishlist",
+                            onAction = { showAdd = true },
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(wishlists, key = { it.id }) { wl ->
+                            SwipeToRevealDelete(
+                                onDelete = { viewModel.deleteWishlist(wl) },
+                                modifier = Modifier.animateItem(),
+                                shape = RoundedCornerShape(20.dp),
+                            ) {
+                                ListCard(onClick = { onOpen(wl.id) }) {
+                                    // Large icon in colored circle
+                                    Box(
+                                        Modifier
+                                            .size(52.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primaryContainer),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            wishlistIconVector(wl.icon),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(28.dp),
                                         )
                                     }
+                                    Spacer(Modifier.width(14.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            wl.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                        )
+                                        if (wl.ownerName.isNotEmpty()) {
+                                            Text(
+                                                "By ${wl.ownerName}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
                 }
             }
-        }
         }
     }
 
@@ -448,7 +447,7 @@ private fun WishLinkButton(link: String?) {
         IconButton(onClick = {
             runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link))) }
         }) {
-            Icon(Icons.Filled.OpenInNew, contentDescription = "Open link", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open link", tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -633,12 +632,13 @@ private fun NewWishlistDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                 }
                 AnimatedVisibility(visible = showIconPicker) {
@@ -682,12 +682,13 @@ private fun RenameWishlistDialog(
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                ),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                    ),
             )
         },
         confirmButton = {

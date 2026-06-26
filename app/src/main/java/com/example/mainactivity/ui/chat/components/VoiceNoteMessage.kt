@@ -60,12 +60,15 @@ fun VoiceNoteMessage(
                 try {
                     val retriever = android.media.MediaMetadataRetriever()
                     retriever.setDataSource(url, emptyMap())
-                    val ms = retriever.extractMetadata(
-                        android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
-                    )?.toIntOrNull() ?: 0
+                    val ms =
+                        retriever
+                            .extractMetadata(
+                                android.media.MediaMetadataRetriever.METADATA_KEY_DURATION,
+                            )?.toIntOrNull() ?: 0
                     retriever.release()
                     durationMs = ms
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
         }
     }

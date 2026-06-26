@@ -1,48 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- For Night/Dark mode -->
-    <color name="colorPrimary">#8BA4FF</color>
-    <color name="colorPrimaryDark">#5C76D6</color>
-    <color name="colorAccent">#9FB2FF</color>
-    <color name="textColorPrimary">#E2E8F0</color>
-    <color name="backgroundColor">#0B1220</color>
-    <color name="textColor">#E2E8F0</color>
-    <color name="backgroundListItem">#111827</color>
-    <color name="calenderBackgroundColor">#111827</color>
-    <color name="headlineCardView">#E2E8F0</color>
-
+    
     <color name="ic_launcher_background">#5457E8</color>
     <color name="splash_background">#5457E8</color>
-    <color name="Grey">#94A3B8</color>
-
-    <color name="tint">#94A3B8</color>
-    <color name="black">#000000</color>
-    <color name="background">#0B1220</color>
-    <color name="surface">#111827</color>
-    <color name="primary">#8BA4FF</color>
-    <color name="button">#8BA4FF</color>
-    <color name="secondary">#9FB2FF</color>
-    <color name="onBackground">#E2E8F0</color>
-    <color name="onSurface">#E2E8F0</color>
-    <color name="onPrimary">#0B1220</color>
-
-    <!-- Datepicker -->
-    <color name="headerBackground">#8BA4FF</color>
-    <color name="calenderBackground">#111827</color>
-    <color name="selectedDay">#9FB2FF</color>
-    <color name="daysOfTheMonth">#E2E8F0</color>
-    <color name="daysOfTheWeek">#E2E8F0</color>
-    <color name="buttonColor">#8BA4FF</color>
-    <color name="backgroundTint">#111827</color>
-
-    <!-- AlertDialog -->
-    <color name="backgroundColorAlert">#111827</color>
-    <color name="textColorAlert">#E2E8F0</color>
-    <color name="buttonColorAlert">#8BA4FF</color>
-
-    <!-- TimePickerDialog -->
-    <color name="TimePickerAccent">#8BA4FF</color>
-    <color name="TimePickerColorControl">#9FB2FF</color>
-    <color name="backgroundColorTimePicker">#111827</color>
-</resources>
+    </resources>

@@ -78,8 +78,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.ShoppingItemModel
 import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
@@ -147,49 +147,49 @@ fun ShoppingScreen(
             onRefresh = { viewModel.refresh().join() },
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-        if (isLoading) {
-            ListSkeleton(Modifier.fillMaxSize())
-        } else if (lists.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyState(
-                    Icons.Filled.ShoppingCart,
-                    "No lists yet",
-                    "Create a shared shopping list for your family.",
-                    actionLabel = "New list",
-                    onAction = { showAdd = true },
-                )
-            }
-        } else {
-            LazyColumn(
-                Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(lists, key = { it.id }) { list ->
-                    SwipeToRevealDelete(
-                        onDelete = { viewModel.deleteList(list) },
-                        modifier = Modifier.animateItem(),
-                        shape = RoundedCornerShape(20.dp),
-                    ) {
-                        ListCard(onClick = { onOpenList(list.id) }) {
-                            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                                Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
+            if (isLoading) {
+                ListSkeleton(Modifier.fillMaxSize())
+            } else if (lists.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    EmptyState(
+                        Icons.Filled.ShoppingCart,
+                        "No lists yet",
+                        "Create a shared shopping list for your family.",
+                        actionLabel = "New list",
+                        onAction = { showAdd = true },
+                    )
+                }
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(lists, key = { it.id }) { list ->
+                        SwipeToRevealDelete(
+                            onDelete = { viewModel.deleteList(list) },
+                            modifier = Modifier.animateItem(),
+                            shape = RoundedCornerShape(20.dp),
+                        ) {
+                            ListCard(onClick = { onOpenList(list.id) }) {
+                                Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                                    Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(Modifier.size(8.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(list.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        shoppingProgressLabel(progress[list.id]),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Spacer(Modifier.size(8.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(list.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Text(
-                                    shoppingProgressLabel(progress[list.id]),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
-        }
         }
     }
 
@@ -292,12 +292,13 @@ fun ShoppingDetailScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { addItem() }),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                     Spacer(Modifier.width(8.dp))
                     IconButton(
@@ -519,12 +520,13 @@ private fun NewListDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                 }
                 AnimatedVisibility(visible = showIconPicker) {

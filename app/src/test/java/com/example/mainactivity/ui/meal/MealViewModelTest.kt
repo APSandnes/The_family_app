@@ -43,7 +43,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class MealViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -380,13 +379,14 @@ class MealViewModelTest {
     @Test
     fun `setFood updates the food field for the matching day`() =
         runTest(dispatcherRule.dispatcher) {
-            val day = MealPlanDayModel(
-                id = "day-1",
-                mealPlanId = "plan-1",
-                day = "Monday",
-                date = "2024-01-01",
-                food = "",
-            )
+            val day =
+                MealPlanDayModel(
+                    id = "day-1",
+                    mealPlanId = "plan-1",
+                    day = "Monday",
+                    date = "2024-01-01",
+                    food = "",
+                )
             seedDays(listOf(day))
 
             vm.setFood(day, "Pizza")

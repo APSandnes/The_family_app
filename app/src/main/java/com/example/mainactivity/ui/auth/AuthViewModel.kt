@@ -20,111 +20,113 @@ data class AuthUiState(
 )
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(
-    internal val repo: FamilyRepository,
-) : ViewModel() {
-    private val _state = MutableStateFlow(AuthUiState())
-    val state: StateFlow<AuthUiState> = _state.asStateFlow()
+class AuthViewModel
+    @Inject
+    constructor(
+        internal val repo: FamilyRepository,
+    ) : ViewModel() {
+        private val _state = MutableStateFlow(AuthUiState())
+        val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
-    init {
-        // Finalize external (Google OAuth) sign-in: once the browser redirect lands and the
-        // session becomes Authenticated, resolve + persist the app user so the auth gate flips.
-        viewModelScope.launch {
-            repo.sessionStatusFlow.collect { status ->
-                if (status is SessionStatus.Authenticated) {
-                    repo.completeSignInAfterConfirmation()
+        init {
+            // Finalize external (Google OAuth) sign-in: once the browser redirect lands and the
+            // session becomes Authenticated, resolve + persist the app user so the auth gate flips.
+            viewModelScope.launch {
+                repo.sessionStatusFlow.collect { status ->
+                    if (status is SessionStatus.Authenticated) {
+                        repo.completeSignInAfterConfirmation()
+                    }
                 }
             }
         }
-    }
 
-    fun signInWithGoogle() {
-        _state.update { it.copy(loading = true, error = null) }
-        viewModelScope.launch {
-            repo.signInWithGoogle().onFailure { e ->
-                _state.update { it.copy(loading = false, error = friendlyAuthError(e, isLogin = true)) }
+        fun signInWithGoogle() {
+            _state.update { it.copy(loading = true, error = null) }
+            viewModelScope.launch {
+                repo.signInWithGoogle().onFailure { e ->
+                    _state.update { it.copy(loading = false, error = friendlyAuthError(e, isLogin = true)) }
+                }
             }
         }
-    }
 
-    fun clearError() = _state.update { it.copy(error = null) }
+        fun clearError() = _state.update { it.copy(error = null) }
 
-    fun setError(message: String) = _state.update { it.copy(loading = false, error = message) }
+        fun setError(message: String) = _state.update { it.copy(loading = false, error = message) }
 
-    fun login(
-        email: String,
-        password: String,
-    ) {
-        if (!validate(email = email, password = password)) return
-        _state.update { it.copy(loading = true, error = null) }
-        viewModelScope.launch {
-            val result = repo.login(email, password)
-            _state.update {
-                result.fold(
-                    onSuccess = { AuthUiState(success = true) },
-                    onFailure = { e ->
-                        Log.e("Auth", "Login failed", e)
-                        it.copy(loading = false, error = friendlyAuthError(e, isLogin = true))
-                    },
-                )
-            }
-        }
-    }
-
-    fun register(
-        name: String,
-        email: String,
-        password: String,
-        confirm: String,
-        birthday: String,
-        mobile: String,
-    ) {
-        when {
-            name.isBlank() -> return setError("Please enter your name.")
-            !validate(email = email, password = password) -> return
-            password != confirm -> return setError("Passwords do not match.")
-        }
-        _state.update { it.copy(loading = true, error = null) }
-        viewModelScope.launch {
-            val registerResult = repo.register(name, email, password, birthday, mobile)
-            if (registerResult.isFailure) {
-                val e = registerResult.exceptionOrNull()!!
-                Log.e("Auth", "Register failed", e)
-                _state.update { AuthUiState(error = friendlyAuthError(e, isLogin = false)) }
-                return@launch
-            }
-            // Email confirmation is disabled — session is active immediately after signUpWith.
-            val signInResult = repo.completeSignInAfterConfirmation()
-            _state.update {
-                signInResult.fold(
-                    onSuccess = { AuthUiState(success = true) },
-                    onFailure = { e ->
-                        Log.e("Auth", "Post-register sign-in failed", e)
-                        AuthUiState(error = friendlyAuthError(e, isLogin = false))
-                    },
-                )
-            }
-        }
-    }
-
-    private fun validate(
-        email: String,
-        password: String,
-    ): Boolean {
-        if (!android.util.Patterns.EMAIL_ADDRESS
-                .matcher(email.trim())
-                .matches()
+        fun login(
+            email: String,
+            password: String,
         ) {
-            setError("Please enter a valid email address.")
-            return false
+            if (!validate(email = email, password = password)) return
+            _state.update { it.copy(loading = true, error = null) }
+            viewModelScope.launch {
+                val result = repo.login(email, password)
+                _state.update {
+                    result.fold(
+                        onSuccess = { AuthUiState(success = true) },
+                        onFailure = { e ->
+                            Log.e("Auth", "Login failed", e)
+                            it.copy(loading = false, error = friendlyAuthError(e, isLogin = true))
+                        },
+                    )
+                }
+            }
         }
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.")
-            return false
+
+        fun register(
+            name: String,
+            email: String,
+            password: String,
+            confirm: String,
+            birthday: String,
+            mobile: String,
+        ) {
+            when {
+                name.isBlank() -> return setError("Please enter your name.")
+                !validate(email = email, password = password) -> return
+                password != confirm -> return setError("Passwords do not match.")
+            }
+            _state.update { it.copy(loading = true, error = null) }
+            viewModelScope.launch {
+                val registerResult = repo.register(name, email, password, birthday, mobile)
+                if (registerResult.isFailure) {
+                    val e = registerResult.exceptionOrNull()!!
+                    Log.e("Auth", "Register failed", e)
+                    _state.update { AuthUiState(error = friendlyAuthError(e, isLogin = false)) }
+                    return@launch
+                }
+                // Email confirmation is disabled — session is active immediately after signUpWith.
+                val signInResult = repo.completeSignInAfterConfirmation()
+                _state.update {
+                    signInResult.fold(
+                        onSuccess = { AuthUiState(success = true) },
+                        onFailure = { e ->
+                            Log.e("Auth", "Post-register sign-in failed", e)
+                            AuthUiState(error = friendlyAuthError(e, isLogin = false))
+                        },
+                    )
+                }
+            }
         }
-        return true
+
+        private fun validate(
+            email: String,
+            password: String,
+        ): Boolean {
+            if (!android.util.Patterns.EMAIL_ADDRESS
+                    .matcher(email.trim())
+                    .matches()
+            ) {
+                setError("Please enter a valid email address.")
+                return false
+            }
+            if (password.length < 6) {
+                setError("Password must be at least 6 characters.")
+                return false
+            }
+            return true
+        }
     }
-}
 
 private fun friendlyAuthError(
     e: Throwable,

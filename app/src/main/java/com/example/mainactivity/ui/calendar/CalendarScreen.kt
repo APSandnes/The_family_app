@@ -88,8 +88,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.CalendarEventModel
 import com.example.mainactivity.ui.components.AppFabSmall
 import com.example.mainactivity.ui.components.AppLargeTopBar
@@ -285,7 +285,9 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     }
 }
 
-private enum class CalendarView(val label: String) {
+private enum class CalendarView(
+    val label: String,
+) {
     Month("Month"),
     Week("Week"),
     Agenda("Agenda"),
@@ -406,8 +408,7 @@ private fun AgendaList(
                 .filter { e ->
                     val end = runCatching { LocalDate.parse(e.dateTo.ifBlank { e.dateFrom }) }.getOrNull()
                     end != null && !end.isBefore(today)
-                }
-                .sortedBy { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
+                }.sortedBy { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
                 .groupBy { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() }
         }
     if (grouped.isEmpty()) {
@@ -849,12 +850,13 @@ private fun EventDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                 }
                 AnimatedVisibility(visible = showIconPicker) {

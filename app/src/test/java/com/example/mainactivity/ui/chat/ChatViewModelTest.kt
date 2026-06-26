@@ -60,7 +60,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class ChatViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -96,7 +95,10 @@ class ChatViewModelTest {
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    private fun makePreview(id: String, unreadCount: Int = 0): ConversationWithPreview =
+    private fun makePreview(
+        id: String,
+        unreadCount: Int = 0,
+    ): ConversationWithPreview =
         ConversationWithPreview(
             conversation = ConversationModel(id = id, userFrom = "user-1"),
             lastMessage = null,

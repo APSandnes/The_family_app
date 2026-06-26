@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.ThemeMode
 import com.example.mainactivity.data.remote.SupabaseManager
@@ -16,7 +17,6 @@ import com.example.mainactivity.notifications.NotificationHelper
 import com.example.mainactivity.ui.navigation.FamilyApp
 import com.example.mainactivity.ui.theme.TheFamilyAppTheme
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.lifecycle.lifecycleScope
 import io.github.jan.supabase.auth.handleDeeplinks
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,7 +47,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        androidx.core.app.NotificationManagerCompat.from(this).cancelAll()
+        androidx.core.app.NotificationManagerCompat
+            .from(this)
+            .cancelAll()
         lifecycleScope.launch { repo.touchLastActive() }
     }
 

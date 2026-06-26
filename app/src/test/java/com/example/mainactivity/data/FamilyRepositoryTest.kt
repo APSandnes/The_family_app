@@ -14,7 +14,6 @@ import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 class FamilyRepositoryTest {
-
     // ──────────────────────────────────────────────────────────────
     // palette() — companion object, pure hash function
     // ──────────────────────────────────────────────────────────────
@@ -43,16 +42,17 @@ class FamilyRepositoryTest {
     @Test
     fun `palette result is within the known palette range`() {
         // avatarColors has 8 entries; any result must be one of them
-        val knownColors = setOf(
-            0xFF6366F1.toInt(),
-            0xFFEC4899.toInt(),
-            0xFF14B8A6.toInt(),
-            0xFFF59E0B.toInt(),
-            0xFF8B5CF6.toInt(),
-            0xFF06B6D4.toInt(),
-            0xFFEF4444.toInt(),
-            0xFF10B981.toInt(),
-        )
+        val knownColors =
+            setOf(
+                0xFF6366F1.toInt(),
+                0xFFEC4899.toInt(),
+                0xFF14B8A6.toInt(),
+                0xFFF59E0B.toInt(),
+                0xFF8B5CF6.toInt(),
+                0xFF06B6D4.toInt(),
+                0xFFEF4444.toInt(),
+                0xFF10B981.toInt(),
+            )
         val result = FamilyRepository.palette("testSeed")
         assert(result in knownColors) {
             "palette(\"testSeed\") = $result is not in the known color set"

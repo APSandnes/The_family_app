@@ -56,11 +56,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.example.mainactivity.ui.components.BirthdayPickerField
 import com.example.mainactivity.ui.components.AppLargeTopBar
+import com.example.mainactivity.ui.components.BirthdayPickerField
 import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
@@ -128,7 +128,9 @@ fun ProfileScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Avatar circle — clickable to change photo (disabled during upload)
                     Box(
-                        Modifier.size(72.dp).clip(CircleShape)
+                        Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
                             .clickable(enabled = !isUploading) { showAvatarPicker = true },
                     ) {
                         val avatarUri = user?.avatarUrl

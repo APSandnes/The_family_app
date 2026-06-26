@@ -76,6 +76,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,7 +85,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -120,8 +120,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.mainactivity.data.ConversationWithPreview
 import com.example.mainactivity.data.MessageModel
@@ -130,8 +130,8 @@ import com.example.mainactivity.ui.chat.components.ImageViewerDialog
 import com.example.mainactivity.ui.chat.components.ReactionChipsRow
 import com.example.mainactivity.ui.chat.components.ReactionPickerPopup
 import com.example.mainactivity.ui.chat.components.VoiceNoteMessage
-import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.AppLargeTopBar
+import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.InputDialog
@@ -466,7 +466,7 @@ fun ConversationScreen(
     }
 
     val listState = rememberLazyListState()
-    var prevMsgCount by remember { mutableStateOf(0) }
+    var prevMsgCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(messages.size) {
         if (messages.isEmpty()) {
@@ -570,9 +570,10 @@ fun ConversationScreen(
         ) { uri ->
             uri ?: return@rememberLauncherForActivityResult
             scope.launch {
-                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.readBytes()
-                } ?: return@launch
+                val bytes =
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        context.contentResolver.openInputStream(uri)?.readBytes()
+                    } ?: return@launch
                 viewModel.sendImage(conversationId, bytes, "img_${System.currentTimeMillis()}.jpg")
             }
         }
@@ -585,9 +586,10 @@ fun ConversationScreen(
             if (success) {
                 val file = msgCameraFile ?: return@rememberLauncherForActivityResult
                 scope.launch {
-                    val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        file.readBytes().also { file.delete() }
-                    }
+                    val bytes =
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            file.readBytes().also { file.delete() }
+                        }
                     viewModel.sendImage(conversationId, bytes, "cam_${System.currentTimeMillis()}.jpg")
                 }
             }
@@ -759,7 +761,9 @@ fun ConversationScreen(
                                         val captureDir = java.io.File(context.cacheDir, "camera_captures").also { it.mkdirs() }
                                         val file = java.io.File(captureDir, "chat_${System.currentTimeMillis()}.jpg")
                                         msgCameraFile = file
-                                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                        val uri =
+                                            androidx.core.content.FileProvider
+                                                .getUriForFile(context, "${context.packageName}.fileprovider", file)
                                         msgCameraLauncher.launch(uri)
                                     }) {
                                         Icon(
@@ -821,9 +825,11 @@ fun ConversationScreen(
                                                 .pointerInput(Unit) {
                                                     detectTapGestures(
                                                         onPress = {
-                                                            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                                context, android.Manifest.permission.RECORD_AUDIO
-                                                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                                            val hasPermission =
+                                                                androidx.core.content.ContextCompat.checkSelfPermission(
+                                                                    context,
+                                                                    android.Manifest.permission.RECORD_AUDIO,
+                                                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                                             if (hasPermission) {
                                                                 startRecording()
                                                                 tryAwaitRelease()
@@ -1448,7 +1454,10 @@ private fun MessageRow(
                             ) {
                                 Box(Modifier.background(BrandGradient)) {
                                     MessageContent(
-                                        msg, mine = true, myId = myId, messages = messages,
+                                        msg,
+                                        mine = true,
+                                        myId = myId,
+                                        messages = messages,
                                         onLongClick = { showReactionPicker = true },
                                         extraBottomPadding = if (reactions.isNotEmpty()) chipOverlap else 0.dp,
                                     )
@@ -1533,7 +1542,10 @@ private fun MessageRow(
                                         ),
                                 ) {
                                     MessageContent(
-                                        msg, mine = false, myId = myId, messages = messages,
+                                        msg,
+                                        mine = false,
+                                        myId = myId,
+                                        messages = messages,
                                         onLongClick = { showReactionPicker = true },
                                         extraBottomPadding = if (reactions.isNotEmpty()) chipOverlap else 0.dp,
                                     )
@@ -1592,14 +1604,15 @@ private fun MessageContent(
                 model = msg.mediaUrl,
                 contentDescription = "Image",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(220.dp)
-                    .height(165.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .combinedClickable(
-                        onClick = { showViewer = true },
-                        onLongClick = { onLongClick?.invoke() },
-                    ),
+                modifier =
+                    Modifier
+                        .width(220.dp)
+                        .height(165.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .combinedClickable(
+                            onClick = { showViewer = true },
+                            onLongClick = { onLongClick?.invoke() },
+                        ),
             )
             if (showViewer && msg.mediaUrl != null) {
                 ImageViewerDialog(url = msg.mediaUrl, onDismiss = { showViewer = false })
@@ -1612,9 +1625,10 @@ private fun MessageContent(
         }
         "system" -> {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp, horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp, horizontal = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

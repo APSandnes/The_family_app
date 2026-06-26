@@ -38,7 +38,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class FamilyViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -65,36 +64,41 @@ class FamilyViewModelTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `members are empty before userId emits`() = runTest(dispatcherRule.dispatcher) {
-        assertTrue("members should be empty initially", vm.members.value.isEmpty())
-    }
+    fun `members are empty before userId emits`() =
+        runTest(dispatcherRule.dispatcher) {
+            assertTrue("members should be empty initially", vm.members.value.isEmpty())
+        }
 
     @Test
-    fun `family is null before userId emits`() = runTest(dispatcherRule.dispatcher) {
-        assertNull("family should be null initially", vm.family.value)
-    }
+    fun `family is null before userId emits`() =
+        runTest(dispatcherRule.dispatcher) {
+            assertNull("family should be null initially", vm.family.value)
+        }
 
     @Test
-    fun `error is null initially`() = runTest(dispatcherRule.dispatcher) {
-        assertNull("error should be null initially", vm.error.value)
-    }
+    fun `error is null initially`() =
+        runTest(dispatcherRule.dispatcher) {
+            assertNull("error should be null initially", vm.error.value)
+        }
 
     @Test
-    fun `currentUser is null before userId emits`() = runTest(dispatcherRule.dispatcher) {
-        assertNull("currentUser should be null initially", vm.currentUser.value)
-    }
+    fun `currentUser is null before userId emits`() =
+        runTest(dispatcherRule.dispatcher) {
+            assertNull("currentUser should be null initially", vm.currentUser.value)
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 2. userId emit triggers load
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `emitting userId triggers getUser call`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `emitting userId triggers getUser call`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coVerify(atLeast = 1) { repo.getUser("user1") }
-    }
+            coVerify(atLeast = 1) { repo.getUser("user1") }
+        }
 
     @Test
     fun `emitting userId with null familyId sets currentUser and clears family and members`() =
@@ -108,34 +112,36 @@ class FamilyViewModelTest {
         }
 
     @Test
-    fun `null userId clears family members and currentUser`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `null userId clears family members and currentUser`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        userId.value = null
-        advanceUntilIdle()
+            userId.value = null
+            advanceUntilIdle()
 
-        assertNull("family should be null after sign-out", vm.family.value)
-        assertTrue("members should be empty after sign-out", vm.members.value.isEmpty())
-        assertNull("currentUser should be null after sign-out", vm.currentUser.value)
-    }
+            assertNull("family should be null after sign-out", vm.family.value)
+            assertTrue("members should be empty after sign-out", vm.members.value.isEmpty())
+            assertNull("currentUser should be null after sign-out", vm.currentUser.value)
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 3. createFamily
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `createFamily calls repo with correct arguments`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `createFamily calls repo with correct arguments`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coEvery { repo.createFamily("MyFamily", "CODE1234", "user1") } returns Result.success("fam-id")
+            coEvery { repo.createFamily("MyFamily", "CODE1234", "user1") } returns Result.success("fam-id")
 
-        vm.createFamily("MyFamily", "CODE1234")
-        advanceUntilIdle()
+            vm.createFamily("MyFamily", "CODE1234")
+            advanceUntilIdle()
 
-        coVerify { repo.createFamily("MyFamily", "CODE1234", "user1") }
-    }
+            coVerify { repo.createFamily("MyFamily", "CODE1234", "user1") }
+        }
 
     @Test
     fun `createFamily success triggers reload — getUser called at least twice`() =
@@ -153,44 +159,47 @@ class FamilyViewModelTest {
         }
 
     @Test
-    fun `createFamily failure sets error state`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `createFamily failure sets error state`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coEvery { repo.createFamily(any(), any(), any()) } returns
-            Result.failure(RuntimeException("Family already exists"))
+            coEvery { repo.createFamily(any(), any(), any()) } returns
+                Result.failure(RuntimeException("Family already exists"))
 
-        vm.createFamily("MyFamily", "CODE1234")
-        advanceUntilIdle()
+            vm.createFamily("MyFamily", "CODE1234")
+            advanceUntilIdle()
 
-        assertEquals("Family already exists", vm.error.value)
-    }
+            assertEquals("Family already exists", vm.error.value)
+        }
 
     @Test
-    fun `createFamily with null userId is a no-op`() = runTest(dispatcherRule.dispatcher) {
-        // userId is null — createFamily should early-return via currentUserId.first()
-        vm.createFamily("MyFamily", "CODE1234")
-        advanceUntilIdle()
+    fun `createFamily with null userId is a no-op`() =
+        runTest(dispatcherRule.dispatcher) {
+            // userId is null — createFamily should early-return via currentUserId.first()
+            vm.createFamily("MyFamily", "CODE1234")
+            advanceUntilIdle()
 
-        coVerify(exactly = 0) { repo.createFamily(any(), any(), any()) }
-    }
+            coVerify(exactly = 0) { repo.createFamily(any(), any(), any()) }
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 4. joinFamily
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `joinFamily calls repo with correct arguments`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `joinFamily calls repo with correct arguments`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coEvery { repo.joinFamily("CODE1234", "user1") } returns Result.success("fam-id")
+            coEvery { repo.joinFamily("CODE1234", "user1") } returns Result.success("fam-id")
 
-        vm.joinFamily("CODE1234")
-        advanceUntilIdle()
+            vm.joinFamily("CODE1234")
+            advanceUntilIdle()
 
-        coVerify { repo.joinFamily("CODE1234", "user1") }
-    }
+            coVerify { repo.joinFamily("CODE1234", "user1") }
+        }
 
     @Test
     fun `joinFamily success triggers reload — getUser called at least twice`() =
@@ -208,26 +217,28 @@ class FamilyViewModelTest {
         }
 
     @Test
-    fun `joinFamily failure sets error state`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `joinFamily failure sets error state`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coEvery { repo.joinFamily(any(), any()) } returns
-            Result.failure(RuntimeException("Invalid code"))
+            coEvery { repo.joinFamily(any(), any()) } returns
+                Result.failure(RuntimeException("Invalid code"))
 
-        vm.joinFamily("WRONGCODE")
-        advanceUntilIdle()
+            vm.joinFamily("WRONGCODE")
+            advanceUntilIdle()
 
-        assertEquals("Invalid code", vm.error.value)
-    }
+            assertEquals("Invalid code", vm.error.value)
+        }
 
     @Test
-    fun `joinFamily with null userId is a no-op`() = runTest(dispatcherRule.dispatcher) {
-        vm.joinFamily("CODE1234")
-        advanceUntilIdle()
+    fun `joinFamily with null userId is a no-op`() =
+        runTest(dispatcherRule.dispatcher) {
+            vm.joinFamily("CODE1234")
+            advanceUntilIdle()
 
-        coVerify(exactly = 0) { repo.joinFamily(any(), any()) }
-    }
+            coVerify(exactly = 0) { repo.joinFamily(any(), any()) }
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 5. leaveFamily
@@ -246,59 +257,63 @@ class FamilyViewModelTest {
         }
 
     @Test
-    fun `leaveFamily with null userId is a no-op`() = runTest(dispatcherRule.dispatcher) {
-        vm.leaveFamily()
-        advanceUntilIdle()
+    fun `leaveFamily with null userId is a no-op`() =
+        runTest(dispatcherRule.dispatcher) {
+            vm.leaveFamily()
+            advanceUntilIdle()
 
-        coVerify(exactly = 0) { repo.leaveFamily(any()) }
-    }
+            coVerify(exactly = 0) { repo.leaveFamily(any()) }
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 6. renameFamily
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `renameFamily when family is null is a no-op`() = runTest(dispatcherRule.dispatcher) {
-        // _family.value is null (userId not emitted, no family loaded)
-        vm.renameFamily("NewName")
-        advanceUntilIdle()
+    fun `renameFamily when family is null is a no-op`() =
+        runTest(dispatcherRule.dispatcher) {
+            // _family.value is null (userId not emitted, no family loaded)
+            vm.renameFamily("NewName")
+            advanceUntilIdle()
 
-        coVerify(exactly = 0) { repo.renameFamily(any(), any()) }
-    }
-
-    @Test
-    fun `renameFamily calls repo with family id and new name`() = runTest(dispatcherRule.dispatcher) {
-        // Use a user with familyId to populate _family via load().
-        // _family.value = repo.getFamily(...) is set BEFORE the direct Supabase members
-        // call, so _family is populated even when that Supabase call fails silently.
-        coEvery { repo.getUser("user1") } returns UserModel(id = "user1", familyId = "fam-id")
-        coEvery { repo.getFamily("fam-id") } returns FamilyModel(id = "fam-id", name = "OldName")
-        coEvery { repo.renameFamily("fam-id", "NewName") } returns Result.success(Unit)
-
-        userId.value = "user1"
-        advanceUntilIdle()
-
-        vm.renameFamily("NewName")
-        advanceUntilIdle()
-
-        coVerify { repo.renameFamily("fam-id", "NewName") }
-    }
+            coVerify(exactly = 0) { repo.renameFamily(any(), any()) }
+        }
 
     @Test
-    fun `renameFamily failure sets error state`() = runTest(dispatcherRule.dispatcher) {
-        coEvery { repo.getUser("user1") } returns UserModel(id = "user1", familyId = "fam-id")
-        coEvery { repo.getFamily("fam-id") } returns FamilyModel(id = "fam-id", name = "OldName")
-        coEvery { repo.renameFamily(any(), any()) } returns
-            Result.failure(RuntimeException("Rename failed"))
+    fun `renameFamily calls repo with family id and new name`() =
+        runTest(dispatcherRule.dispatcher) {
+            // Use a user with familyId to populate _family via load().
+            // _family.value = repo.getFamily(...) is set BEFORE the direct Supabase members
+            // call, so _family is populated even when that Supabase call fails silently.
+            coEvery { repo.getUser("user1") } returns UserModel(id = "user1", familyId = "fam-id")
+            coEvery { repo.getFamily("fam-id") } returns FamilyModel(id = "fam-id", name = "OldName")
+            coEvery { repo.renameFamily("fam-id", "NewName") } returns Result.success(Unit)
 
-        userId.value = "user1"
-        advanceUntilIdle()
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        vm.renameFamily("NewName")
-        advanceUntilIdle()
+            vm.renameFamily("NewName")
+            advanceUntilIdle()
 
-        assertEquals("Rename failed", vm.error.value)
-    }
+            coVerify { repo.renameFamily("fam-id", "NewName") }
+        }
+
+    @Test
+    fun `renameFamily failure sets error state`() =
+        runTest(dispatcherRule.dispatcher) {
+            coEvery { repo.getUser("user1") } returns UserModel(id = "user1", familyId = "fam-id")
+            coEvery { repo.getFamily("fam-id") } returns FamilyModel(id = "fam-id", name = "OldName")
+            coEvery { repo.renameFamily(any(), any()) } returns
+                Result.failure(RuntimeException("Rename failed"))
+
+            userId.value = "user1"
+            advanceUntilIdle()
+
+            vm.renameFamily("NewName")
+            advanceUntilIdle()
+
+            assertEquals("Rename failed", vm.error.value)
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 7. generateJoinCode
@@ -327,33 +342,35 @@ class FamilyViewModelTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `clearError resets error to null after a failure`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `clearError resets error to null after a failure`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        coEvery { repo.createFamily(any(), any(), any()) } returns
-            Result.failure(RuntimeException("Something went wrong"))
+            coEvery { repo.createFamily(any(), any(), any()) } returns
+                Result.failure(RuntimeException("Something went wrong"))
 
-        vm.createFamily("Name", "CODE")
-        advanceUntilIdle()
-        assertNotNull("error should be set after failure", vm.error.value)
+            vm.createFamily("Name", "CODE")
+            advanceUntilIdle()
+            assertNotNull("error should be set after failure", vm.error.value)
 
-        vm.clearError()
-        assertNull("error should be null after clearError", vm.error.value)
-    }
+            vm.clearError()
+            assertNull("error should be null after clearError", vm.error.value)
+        }
 
     // ──────────────────────────────────────────────────────────────
     // 9. refresh
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    fun `refresh triggers a second getUser call`() = runTest(dispatcherRule.dispatcher) {
-        userId.value = "user1"
-        advanceUntilIdle()
+    fun `refresh triggers a second getUser call`() =
+        runTest(dispatcherRule.dispatcher) {
+            userId.value = "user1"
+            advanceUntilIdle()
 
-        vm.refresh()
-        advanceUntilIdle()
+            vm.refresh()
+            advanceUntilIdle()
 
-        coVerify(exactly = 2) { repo.getUser("user1") }
-    }
+            coVerify(exactly = 2) { repo.getUser("user1") }
+        }
 }

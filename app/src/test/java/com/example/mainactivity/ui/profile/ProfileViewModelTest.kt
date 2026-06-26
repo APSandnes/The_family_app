@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class ProfileViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -142,8 +141,14 @@ class ProfileViewModelTest {
     @Test
     fun `save applies optimistic name update to user StateFlow`() =
         runTest(dispatcherRule.dispatcher) {
-            val original = UserModel(id = "user-1", name = "Alice", email = "alice@example.com",
-                birthday = "1990-01-01", mobile = "12345678")
+            val original =
+                UserModel(
+                    id = "user-1",
+                    name = "Alice",
+                    email = "alice@example.com",
+                    birthday = "1990-01-01",
+                    mobile = "12345678",
+                )
             coEvery { repo.getUser("user-1") } returns original
 
             currentUserId.value = "user-1"
@@ -158,8 +163,14 @@ class ProfileViewModelTest {
     @Test
     fun `save applies optimistic email update to user StateFlow`() =
         runTest(dispatcherRule.dispatcher) {
-            val original = UserModel(id = "user-1", name = "Alice", email = "old@example.com",
-                birthday = "1990-01-01", mobile = "12345678")
+            val original =
+                UserModel(
+                    id = "user-1",
+                    name = "Alice",
+                    email = "old@example.com",
+                    birthday = "1990-01-01",
+                    mobile = "12345678",
+                )
             coEvery { repo.getUser("user-1") } returns original
 
             currentUserId.value = "user-1"
@@ -174,8 +185,14 @@ class ProfileViewModelTest {
     @Test
     fun `save trims whitespace from name and email`() =
         runTest(dispatcherRule.dispatcher) {
-            val original = UserModel(id = "user-1", name = "Alice", email = "alice@example.com",
-                birthday = "1990-01-01", mobile = "")
+            val original =
+                UserModel(
+                    id = "user-1",
+                    name = "Alice",
+                    email = "alice@example.com",
+                    birthday = "1990-01-01",
+                    mobile = "",
+                )
             coEvery { repo.getUser("user-1") } returns original
 
             currentUserId.value = "user-1"

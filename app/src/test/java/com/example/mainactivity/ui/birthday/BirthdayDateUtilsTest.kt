@@ -11,7 +11,6 @@ import java.time.LocalDate
 
 @RunWith(JUnit4::class)
 class BirthdayDateUtilsTest {
-
     // Fixed "today" used for all deterministic tests
     private val today = LocalDate.of(2024, 6, 25)
 

@@ -51,9 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -64,8 +63,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.ListCard
@@ -177,20 +177,29 @@ fun HomeScreen(
                             }
                             if (eventTitle != null) {
                                 SummaryCard(
-                                    Icons.Filled.CalendarMonth, Teal500, "NEXT EVENT",
-                                    eventTitle, state.nextEventWhen,
+                                    Icons.Filled.CalendarMonth,
+                                    Teal500,
+                                    "NEXT EVENT",
+                                    eventTitle,
+                                    state.nextEventWhen,
                                 ) { onOpen("calendar") }
                             }
                             if (state.shoppingRemaining > 0) {
                                 SummaryCard(
-                                    Icons.Filled.ShoppingCart, Indigo500, "SHOPPING",
-                                    "${state.shoppingRemaining} left to buy", null,
+                                    Icons.Filled.ShoppingCart,
+                                    Indigo500,
+                                    "SHOPPING",
+                                    "${state.shoppingRemaining} left to buy",
+                                    null,
                                 ) { onOpen("shopping") }
                             }
                             if (birthdayName != null) {
                                 SummaryCard(
-                                    Icons.Filled.Cake, Pink500, "NEXT BIRTHDAY",
-                                    birthdayName, state.nextBirthdayWhen,
+                                    Icons.Filled.Cake,
+                                    Pink500,
+                                    "NEXT BIRTHDAY",
+                                    birthdayName,
+                                    state.nextBirthdayWhen,
                                 ) { onOpen("birthday") }
                             }
                             Spacer(Modifier.height(4.dp))

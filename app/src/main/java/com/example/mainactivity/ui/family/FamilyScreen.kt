@@ -4,9 +4,9 @@ package com.example.mainactivity.ui.family
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.Image
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,8 +46,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -62,8 +62,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.ui.components.AppLargeTopBar
 import com.example.mainactivity.ui.components.CopyableCodeField
@@ -109,11 +109,12 @@ fun FamilyScreen(
 
     val isAdmin = family != null && family!!.adminId == currentUser?.id
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) viewModel.uploadFamilyPhoto(context, uri)
-    }
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            if (uri != null) viewModel.uploadFamilyPhoto(context, uri)
+        }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -135,7 +136,7 @@ fun FamilyScreen(
                                     onClick = {
                                         showPhotoMenu = false
                                         photoPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                                         )
                                     },
                                 )
@@ -149,23 +150,25 @@ fun FamilyScreen(
         if (family == null) {
             // ── No-family empty state ──────────────────────────────────────
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding),
             ) {
                 // Subtle gradient decoration behind the empty state
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                    MaterialTheme.colorScheme.background,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                        MaterialTheme.colorScheme.background,
+                                    ),
                                 ),
                             ),
-                        ),
                 )
 
                 Column(
@@ -237,9 +240,10 @@ fun FamilyScreen(
                                 CopyableCodeField(
                                     code = family!!.joinCode,
                                     label = "Invite Code",
-                                    modifier = Modifier.semantics {
-                                        contentDescription = "Family invite code: ${family!!.joinCode}"
-                                    },
+                                    modifier =
+                                        Modifier.semantics {
+                                            contentDescription = "Family invite code: ${family!!.joinCode}"
+                                        },
                                 )
                                 Spacer(Modifier.height(12.dp))
                                 SecondaryButton(
@@ -418,32 +422,38 @@ private fun AvatarStack(members: List<UserModel>) {
     val overlapOffset = 24 // dp each avatar shifts right from previous
     val displayMembers = members.take(4)
     val overflow = members.size - displayMembers.size
-    val stackWidth = (overlapOffset * (displayMembers.size - 1) + avatarSize +
-        (if (overflow > 0) overlapOffset + avatarSize else 0)).dp
+    val stackWidth =
+        (
+            overlapOffset * (displayMembers.size - 1) + avatarSize +
+                (if (overflow > 0) overlapOffset + avatarSize else 0)
+        ).dp
 
     val names = members.joinToString(", ") { it.name }
-    val avatarColors = listOf(
-        Color(0xFF6366F1), // indigo
-        Color(0xFF8B5CF6), // violet
-        Color(0xFF14B8A6), // teal
-        Color(0xFFF59E0B), // amber
-    )
+    val avatarColors =
+        listOf(
+            Color(0xFF6366F1), // indigo
+            Color(0xFF8B5CF6), // violet
+            Color(0xFF14B8A6), // teal
+            Color(0xFFF59E0B), // amber
+        )
 
     Box(
-        modifier = Modifier
-            .width(stackWidth)
-            .height(avatarSize.dp)
-            .semantics { contentDescription = "Family members: $names" },
+        modifier =
+            Modifier
+                .width(stackWidth)
+                .height(avatarSize.dp)
+                .semantics { contentDescription = "Family members: $names" },
     ) {
         displayMembers.forEachIndexed { index, member ->
             val color = if (member.avatarColor != 0) Color(member.avatarColor) else avatarColors[index % avatarColors.size]
             Box(
-                modifier = Modifier
-                    .offset(x = (index * overlapOffset).dp)
-                    .size(avatarSize.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(1.dp),
+                modifier =
+                    Modifier
+                        .offset(x = (index * overlapOffset).dp)
+                        .size(avatarSize.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(1.dp),
             ) {
                 InitialAvatar(
                     name = member.name,
@@ -455,11 +465,12 @@ private fun AvatarStack(members: List<UserModel>) {
         }
         if (overflow > 0) {
             Box(
-                modifier = Modifier
-                    .offset(x = (displayMembers.size * overlapOffset).dp)
-                    .size(avatarSize.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                modifier =
+                    Modifier
+                        .offset(x = (displayMembers.size * overlapOffset).dp)
+                        .size(avatarSize.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -486,9 +497,10 @@ private fun MemberCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = memberDescription },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = memberDescription },
     ) {
         Row(
             Modifier.padding(14.dp),
@@ -575,4 +587,3 @@ private fun CreateFamilyDialog(
         },
     )
 }
-
