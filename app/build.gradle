@@ -85,6 +85,7 @@ dependencies {
 
     // Image loading (Coil 3 — artifact group changed from io.coil-kt to io.coil-kt.coil3)
     implementation 'io.coil-kt.coil3:coil-compose:3.5.0'
+    implementation 'io.coil-kt.coil3:coil-network-okhttp:3.5.0'
 
     // WorkManager
     implementation 'androidx.work:work-runtime-ktx:2.11.2'
