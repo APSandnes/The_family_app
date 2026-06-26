@@ -820,26 +820,27 @@ fun ConversationScreen(
                                         )
                                     }
                                 } else {
-                                    IconButton(
-                                        onClick = {},
+                                    Box(
                                         modifier =
-                                            Modifier.pointerInput(Unit) {
-                                                detectTapGestures(
-                                                    onPress = {
-                                                        val permission = android.Manifest.permission.RECORD_AUDIO
-                                                        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                            context, permission
-                                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                                        if (hasPermission) {
-                                                            startRecording()
-                                                            tryAwaitRelease()
-                                                            stopRecording(true)
-                                                        } else {
-                                                            audioPermissionLauncher.launch(permission)
-                                                        }
-                                                    },
-                                                )
-                                            },
+                                            Modifier
+                                                .size(48.dp)
+                                                .pointerInput(Unit) {
+                                                    detectTapGestures(
+                                                        onPress = {
+                                                            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                                                context, android.Manifest.permission.RECORD_AUDIO
+                                                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                                            if (hasPermission) {
+                                                                startRecording()
+                                                                tryAwaitRelease()
+                                                                stopRecording(true)
+                                                            } else {
+                                                                audioPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                                            }
+                                                        },
+                                                    )
+                                                },
+                                        contentAlignment = androidx.compose.ui.Alignment.Center,
                                     ) {
                                         Icon(
                                             Icons.Filled.Mic,
