@@ -23,15 +23,19 @@ import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.broadcast
+import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeRecord
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,10 +50,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.File
 import javax.inject.Inject
+
+@Serializable
+data class TypingSignal(
+    val userId: String,
+    val typing: Boolean,
+)
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -98,6 +109,10 @@ class ChatViewModel @Inject constructor(
     private val _otherLastRead = MutableStateFlow<String?>(null)
     val otherLastRead: StateFlow<String?> = _otherLastRead.asStateFlow()
 
+    // Other users currently typing in the open conversation.
+    private val _typingUsers = MutableStateFlow<Set<String>>(emptySet())
+    val typingUsers: StateFlow<Set<String>> = _typingUsers.asStateFlow()
+
     private val _familyMembers = MutableStateFlow<List<UserModel>>(emptyList())
     val familyMembers: StateFlow<List<UserModel>> = _familyMembers.asStateFlow()
 
@@ -120,6 +135,10 @@ class ChatViewModel @Inject constructor(
     private var realtimeChannel: RealtimeChannel? = null
     private var reactionsChannel: RealtimeChannel? = null
     private var participantsChannel: RealtimeChannel? = null
+    private var typingChannel: RealtimeChannel? = null
+    private var myUserId: String? = null
+    private val typingClearJobs = mutableMapOf<String, Job>()
+    private var lastTypingSentMs = 0L
     private val notifChannels = mutableMapOf<String, RealtimeChannel>()
     private var pendingCameraConversationId: String = ""
     private var pendingCameraFile: File? = null
@@ -337,6 +356,7 @@ class ChatViewModel @Inject constructor(
                 _currentParticipants.value = participantUserIds.mapNotNull { _userProfiles.value[it] }
 
                 val userId = repo.currentUserId.first()
+                myUserId = userId
                 _otherLastRead.value =
                     participantRows.filter { it.userId != userId }.mapNotNull { it.lastReadAt }.maxOrNull()
                 val user = if (userId != null) repo.getUser(userId) else null
@@ -348,6 +368,7 @@ class ChatViewModel @Inject constructor(
 
                 subscribeToMessages(conversationId)
                 subscribeToParticipants(conversationId)
+                subscribeToTyping(conversationId)
                 loadReactions(conversationId)
                 subscribeToReactions(conversationId)
             }
@@ -375,6 +396,45 @@ class ChatViewModel @Inject constructor(
                 _otherLastRead.value =
                     rows.filter { it.userId != myId }.mapNotNull { it.lastReadAt }.maxOrNull()
             }
+        }
+    }
+
+    /** Subscribes to ephemeral "typing" broadcasts on the conversation. */
+    private suspend fun subscribeToTyping(conversationId: String) {
+        typingChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+        _typingUsers.value = emptySet()
+        val channel = SupabaseManager.client.channel("typing-$conversationId")
+        typingChannel = channel
+        val flow = channel.broadcastFlow<TypingSignal>("typing")
+        channel.subscribe()
+        viewModelScope.launch {
+            flow.collect { signal ->
+                if (signal.userId == myUserId) return@collect
+                typingClearJobs.remove(signal.userId)?.cancel()
+                if (signal.typing) {
+                    _typingUsers.update { it + signal.userId }
+                    // Auto-clear in case the "stopped typing" signal is missed.
+                    typingClearJobs[signal.userId] =
+                        viewModelScope.launch {
+                            delay(5000)
+                            _typingUsers.update { it - signal.userId }
+                        }
+                } else {
+                    _typingUsers.update { it - signal.userId }
+                }
+            }
+        }
+    }
+
+    /** Broadcasts the current user's typing state (throttled to once every 2s for "typing"). */
+    fun setTyping(typing: Boolean) {
+        val channel = typingChannel ?: return
+        val me = myUserId ?: return
+        val now = System.currentTimeMillis()
+        if (typing && now - lastTypingSentMs < 2000) return
+        if (typing) lastTypingSentMs = now
+        viewModelScope.launch {
+            runCatching { channel.broadcast("typing", TypingSignal(me, typing)) }
         }
     }
 
@@ -888,6 +948,7 @@ class ChatViewModel @Inject constructor(
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             reactionsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             participantsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+            typingChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             notifChannels.values.forEach { ch ->
                 runCatching { SupabaseManager.client.realtime.removeChannel(ch) }
             }

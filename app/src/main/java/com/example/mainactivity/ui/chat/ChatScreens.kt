@@ -408,6 +408,7 @@ fun ConversationScreen(
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val myId by viewModel.currentUserId.collectAsStateWithLifecycle(null)
     val otherLastRead by viewModel.otherLastRead.collectAsStateWithLifecycle()
+    val typingUsers by viewModel.typingUsers.collectAsStateWithLifecycle()
     val replyTo by viewModel.replyTo.collectAsStateWithLifecycle()
     val userProfiles by viewModel.userProfiles.collectAsStateWithLifecycle()
     val currentParticipants by viewModel.currentParticipants.collectAsStateWithLifecycle()
@@ -773,7 +774,10 @@ fun ConversationScreen(
                             // Text field
                             OutlinedTextField(
                                 value = draft,
-                                onValueChange = { draft = it },
+                                onValueChange = {
+                                    draft = it
+                                    viewModel.setTyping(it.isNotBlank())
+                                },
                                 modifier = Modifier.weight(1f),
                                 placeholder = {
                                     Text(
@@ -800,6 +804,7 @@ fun ConversationScreen(
                                     IconButton(onClick = {
                                         viewModel.send(conversationId, draft.trim())
                                         draft = ""
+                                        viewModel.setTyping(false)
                                         keyboardController?.hide()
                                     }) {
                                         Icon(
@@ -967,6 +972,11 @@ fun ConversationScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+                    }
+                    item {
+                        if (typingUsers.isNotEmpty()) {
+                            TypingIndicatorRow()
                         }
                     }
                 }
@@ -1343,6 +1353,44 @@ private fun WaveformPlaceholder(
 }
 
 @OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TypingIndicatorRow() {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+        ) {
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                val transition = rememberInfiniteTransition(label = "typing")
+                repeat(3) { i ->
+                    val alpha by transition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation = tween(600, delayMillis = i * 200),
+                                repeatMode = RepeatMode.Reverse,
+                            ),
+                        label = "dot$i",
+                    )
+                    Box(
+                        Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun MessageRow(
     msg: MessageModel,
