@@ -14,6 +14,7 @@ data class UserModel(
     @SerialName("family_id") val familyId: String? = null,
     @SerialName("avatar_color") val avatarColor: Int = 0,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("last_active_at") val lastActiveAt: String? = null,
 )
 
 @Serializable

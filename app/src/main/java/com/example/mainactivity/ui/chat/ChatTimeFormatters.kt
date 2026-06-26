@@ -82,6 +82,18 @@ internal fun messageTimeLabel(isoString: String): String =
         ""
     }
 
+/** Chat-header presence: "Active now" within 2 minutes, else "Active {relative}", or null. */
+internal fun presenceLabel(lastActiveIso: String?): String? {
+    if (lastActiveIso == null) return null
+    return try {
+        val instant = java.time.Instant.parse(lastActiveIso)
+        val diffMin = (System.currentTimeMillis() - instant.toEpochMilli()) / 60_000
+        if (diffMin < 2) "Active now" else "Active ${relativeTime(lastActiveIso)}"
+    } catch (e: Exception) {
+        null
+    }
+}
+
 /** True if another participant's last-read time [otherLastRead] is at or after [sentAt],
  *  i.e. they've seen the message. */
 internal fun messageSeen(

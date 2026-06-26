@@ -432,6 +432,12 @@ fun ConversationScreen(
             familyMembers.filter { it.id !in currentIds }
         }
     val isGroup = currentParticipants.size > 2
+    val presence =
+        if (!isGroup) {
+            currentParticipants.firstOrNull { it.id != myId }?.lastActiveAt?.let { presenceLabel(it) }
+        } else {
+            null
+        }
 
     var draft by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
@@ -595,6 +601,7 @@ fun ConversationScreen(
             FeatureTopBar(
                 title = title,
                 onBack = onBack,
+                subtitle = presence,
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu = true }) {

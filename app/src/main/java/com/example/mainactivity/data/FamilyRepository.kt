@@ -48,6 +48,18 @@ class FamilyRepository @Inject constructor(
         _pendingJoinCode.value = null
     }
 
+    /** Bumps the current user's last_active_at — called when the app foregrounds (presence). */
+    suspend fun touchLastActive() {
+        runCatching {
+            val userId = session.currentUserId.first() ?: return
+            SupabaseManager.client.postgrest
+                .from("users")
+                .update({ set("last_active_at", java.time.Instant.now().toString()) }) {
+                    filter { eq("id", userId) }
+                }
+        }
+    }
+
     val currentUserId: Flow<String?> = session.currentUserId
     val themeMode: Flow<ThemeMode> = session.themeMode
     val notificationsEnabled: Flow<Boolean> = session.notificationsEnabled

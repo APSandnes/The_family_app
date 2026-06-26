@@ -40,10 +40,24 @@ import androidx.compose.ui.unit.dp
 fun FeatureTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
+    subtitle: String? = null,
     actions: @Composable () -> Unit = {},
 ) {
     TopAppBar(
-        title = { Text(title, style = MaterialTheme.typography.titleLarge) },
+        title = {
+            if (subtitle.isNullOrBlank()) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+            } else {
+                Column {
+                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack) {

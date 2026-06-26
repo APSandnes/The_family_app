@@ -15,7 +15,9 @@ import com.example.mainactivity.notifications.NotificationHelper
 import com.example.mainactivity.ui.navigation.FamilyApp
 import com.example.mainactivity.ui.theme.TheFamilyAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.lifecycle.lifecycleScope
 import io.github.jan.supabase.auth.handleDeeplinks
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -44,6 +46,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         androidx.core.app.NotificationManagerCompat.from(this).cancelAll()
+        lifecycleScope.launch { repo.touchLastActive() }
     }
 
     override fun onNewIntent(intent: Intent) {
