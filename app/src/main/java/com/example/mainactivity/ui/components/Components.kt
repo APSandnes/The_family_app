@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -44,6 +45,8 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -66,6 +69,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -92,6 +96,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.AsyncImage
 import com.example.mainactivity.ui.theme.BrandGradient
+import com.example.mainactivity.ui.theme.Elevation
+import com.example.mainactivity.ui.theme.Radius
+import com.example.mainactivity.ui.theme.Spacing
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -116,8 +123,11 @@ fun PrimaryButton(
             modifier
                 .scale(scale)
                 .defaultMinSize(minHeight = 56.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(if (active) gradient else Brush.linearGradient(listOf(Color(0xFFB6BAD6), Color(0xFFB6BAD6))))
+                // Disabled = the SAME brand fill at 38% opacity (Material standard) —
+                // never a flat dead-gray, which reads as broken (audit C2).
+                .alpha(if (active) 1f else 0.38f)
+                .clip(RoundedCornerShape(Radius.button))
+                .background(gradient)
                 .clickable(interactionSource = interaction, indication = null, enabled = active) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -143,7 +153,7 @@ fun SecondaryButton(
     Surface(
         onClick = onClick,
         modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(Radius.button),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
@@ -159,6 +169,124 @@ fun SecondaryButton(
             Text(text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
     }
+}
+
+/** Destructive full-width action (Leave family, Sign out, Delete). Tonal red — not a loud
+ *  gradient. Pairs with [ConfirmationDialog] for irreversible actions. */
+@Composable
+fun DestructiveButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(56.dp),
+        shape = RoundedCornerShape(Radius.button),
+        color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.lg),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            leadingIcon?.let {
+                Icon(it, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                text,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+/** Standard extended FAB for the primary "create" action on list screens. */
+@Composable
+fun AppFab(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ExtendedFloatingActionButton(
+        text = { Text(text, fontWeight = FontWeight.SemiBold) },
+        icon = { Icon(icon, contentDescription = null) },
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+    )
+}
+
+/** Compact circular FAB for space-constrained screens (e.g. calendar, map). */
+@Composable
+fun AppFabSmall(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+    ) {
+        Icon(icon, contentDescription = contentDescription)
+    }
+}
+
+/** Standard surface card for list rows. One radius, one elevation, one padding — the building
+ *  block for every list screen (shopping, meals, birthdays, wishlists, family, etc.). */
+@Composable
+fun ListCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val shape = RoundedCornerShape(Radius.card)
+    val inner: @Composable () -> Unit = {
+        Row(
+            Modifier.fillMaxWidth().padding(Spacing.cardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) { content() }
+    }
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = Elevation.resting,
+        ) { inner() }
+    } else {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = Elevation.resting,
+        ) { inner() }
+    }
+}
+
+/** Muted uppercase section label (settings groups, list sections). */
+@Composable
+fun SectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text.uppercase(),
+        modifier = modifier.padding(horizontal = Spacing.xs, vertical = Spacing.sm),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold,
+    )
 }
 
 /** Premium text field used across auth and forms. */
@@ -207,7 +335,7 @@ fun FamilyTextField(
                 .KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
         keyboardActions = keyboardActions,
         supportingText = supportingText?.let { { Text(it) } },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Radius.field),
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -364,7 +492,7 @@ fun CopyableCodeField(
                 Icon(Icons.Filled.ContentCopy, contentDescription = "Copy code")
             }
         },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Radius.field),
         colors =
             OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -437,7 +565,7 @@ fun BirthdayPickerField(
             readOnly = true,
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Outlined.Cake, contentDescription = null) },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Radius.field),
             colors =
                 OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,

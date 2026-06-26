@@ -40,7 +40,26 @@ val InkBorder = Color(0xFF2A3349)
 val InkText = Color(0xFFE8EBF5)
 val InkTextMuted = Color(0xFF9AA4BE)
 
-// Signature gradients
+// Semantic status roles — use these instead of raw accent colors at call sites.
+val Success = Emerald500
+val Warning = Amber500
+val Danger = Rose500
+
+// Feature-accent palette — one stable identity color per domain. Keeps each
+// feature recognizable (home tiles, icon chips, calendar event colors, etc.).
+val FeatureShopping = Indigo500
+val FeatureMeals = Amber500
+val FeatureCalendar = Emerald500
+val FeatureBirthdays = Pink500
+val FeatureWishlists = Violet500
+val FeatureMap = Teal500
+val FeatureChat = Indigo500
+val FeatureFamily = Violet600
+
+// Signature gradients.
+// brandGradient is the ONLY sanctioned gradient and may appear only on identity
+// surfaces: hero headers, outgoing chat bubbles, the brand primary CTA, and the
+// Home family banner. Do not use as a generic card/background fill.
 val BrandGradient = Brush.linearGradient(listOf(Indigo600, Violet600))
 val BrandGradientSoft = Brush.linearGradient(listOf(Indigo500, Violet500))
 

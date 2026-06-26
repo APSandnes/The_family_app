@@ -4,6 +4,7 @@ package com.example.mainactivity.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -19,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import com.example.mainactivity.ui.theme.Radius
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +62,29 @@ fun FeatureTopBar(
     )
 }
 
+/** Large-title top bar for top-level screens (Home, Calendar, Chat list, Family, Profile).
+ *  Trailing [actions] host the avatar / notifications bell / search per D3. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppLargeTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    LargeTopAppBar(
+        title = { Text(title, style = MaterialTheme.typography.headlineMedium) },
+        actions = actions,
+        modifier = modifier,
+        colors =
+            TopAppBarDefaults.largeTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                scrolledContainerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+                actionIconContentColor = MaterialTheme.colorScheme.primary,
+            ),
+    )
+}
+
 /** Reusable single/multi field dialog for quickly adding or editing records. */
 @Composable
 fun InputDialog(
@@ -85,7 +111,7 @@ fun InputDialog(
                     onValueChange = { value = it },
                     label = { Text(label) },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(Radius.field),
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions =
                         androidx.compose.foundation.text
