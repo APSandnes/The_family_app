@@ -454,7 +454,7 @@ private fun formatLastSeen(updatedAt: String?): String {
                     )
         }
     } catch (_: Exception) {
-        "Unknown"
+        "Location shared"
     }
 }
 

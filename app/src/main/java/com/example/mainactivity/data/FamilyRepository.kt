@@ -260,7 +260,7 @@ class FamilyRepository @Inject constructor(
             if (!exists) {
                 client.postgrest.from("birthdays").insert(
                     buildJsonObject {
-                        put("name", "${user.name} birthday")
+                        put("name", user.name)
                         put("date", user.birthday)
                         put("family_id", familyId)
                         put("user_id", userId)
