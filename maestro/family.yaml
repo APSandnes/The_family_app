@@ -1,0 +1,17 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - family
+---
+# Family: invite code + QR dialog + members are shown (read-only; no destructive actions).
+- launchApp:
+    appId: com.example.mainactivity
+- tapOn: "Family"
+- assertVisible: "Invite Code"
+- assertVisible: "Share invite"
+- assertVisible: "Members"
+
+# QR dialog
+- tapOn: "Show QR code"
+- assertVisible: "Scan to join"
+- tapOn: "Done"

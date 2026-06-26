@@ -1,0 +1,30 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - chat
+---
+# Chat: open the first conversation and send a message.
+# (No per-message delete exists, so this leaves one short test message.)
+- launchApp:
+    appId: com.example.mainactivity
+- tapOn: "Chat"
+- assertVisible: "Chats"
+
+# Open the first conversation
+- tapOn:
+    point: "50%,18%"
+
+# Send a message
+- tapOn:
+    point: "55%,88%" # the "Aa" input
+- inputText: "Maestro ping"
+- hideKeyboard
+- tapOn:
+    point: "94%,88%" # send
+- assertVisible: "Maestro ping"
+
+# Long-press shows the reaction picker
+- longPressOn: "Maestro ping"
+- assertVisible: "❤️"
+- tapOn:
+    point: "50%,30%" # dismiss

@@ -1,0 +1,33 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - calendar
+---
+# Calendar: switch views, create an event, delete it.
+- launchApp:
+    appId: com.example.mainactivity
+- tapOn: "Calendar"
+- assertVisible: "Today"
+
+# View toggle
+- tapOn: "Week"
+- tapOn: "Agenda"
+- tapOn: "Month"
+- tapOn: "Agenda"
+
+# Add event via the FAB (circular +, bottom-right)
+- tapOn:
+    point: "88%,76%"
+- assertVisible: "New event"
+- tapOn: "Event name"
+- inputText: "Maestro Event"
+- tapOn: "Save"
+- assertVisible: "Maestro Event"
+
+# Swipe-to-delete the event
+- swipe:
+    start: "85%,28%"
+    end: "12%,28%"
+- tapOn:
+    point: "85%,28%"
+- assertNotVisible: "Maestro Event"
