@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -276,12 +278,17 @@ private fun StepIndicator(
                     modifier =
                         Modifier
                             .size(30.dp)
+                            .border(
+                                width = if (isActive || isCompleted) 0.dp else 1.5.dp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                shape = CircleShape,
+                            )
                             .clip(CircleShape)
                             .background(
                                 if (isActive || isCompleted) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
+                                    Color.Transparent
                                 },
                             ),
                     contentAlignment = Alignment.Center,
@@ -527,6 +534,7 @@ private fun AuthScaffold(
                 .widthIn(max = 480.dp)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 24.dp)
                 .padding(vertical = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
