@@ -82,6 +82,22 @@ internal fun messageTimeLabel(isoString: String): String =
         ""
     }
 
+/** True if another participant's last-read time [otherLastRead] is at or after [sentAt],
+ *  i.e. they've seen the message. */
+internal fun messageSeen(
+    otherLastRead: String?,
+    sentAt: String,
+): Boolean {
+    if (otherLastRead == null) return false
+    return try {
+        !java.time.Instant
+            .parse(otherLastRead)
+            .isBefore(java.time.Instant.parse(sentAt))
+    } catch (e: Exception) {
+        false
+    }
+}
+
 /** Returns true if the gap between two ISO timestamps exceeds 10 minutes. */
 internal fun gapExceedsTenMinutes(
     earlierIso: String,

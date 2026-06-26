@@ -143,6 +143,7 @@ data class ConversationParticipantModel(
     @SerialName("conversation_id") val conversationId: String = "",
     @SerialName("user_id") val userId: String = "",
     @SerialName("joined_at") val joinedAt: String = "",
+    @SerialName("last_read_at") val lastReadAt: String? = null,
 )
 
 @Serializable

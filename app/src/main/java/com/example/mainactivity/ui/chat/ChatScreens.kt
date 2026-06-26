@@ -407,6 +407,7 @@ fun ConversationScreen(
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val myId by viewModel.currentUserId.collectAsStateWithLifecycle(null)
+    val otherLastRead by viewModel.otherLastRead.collectAsStateWithLifecycle()
     val replyTo by viewModel.replyTo.collectAsStateWithLifecycle()
     val userProfiles by viewModel.userProfiles.collectAsStateWithLifecycle()
     val currentParticipants by viewModel.currentParticipants.collectAsStateWithLifecycle()
@@ -945,6 +946,21 @@ fun ConversationScreen(
                             onReact = { emoji -> viewModel.toggleReaction(msg.id, conversationId, emoji) },
                             accessibilityDescription = accessibilityDesc,
                         )
+                    }
+                    item {
+                        val last = messages.lastOrNull()
+                        if (last != null && last.userFrom == myId && messageSeen(otherLastRead, last.sentAt)) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(top = 2.dp, end = 4.dp),
+                                horizontalArrangement = Arrangement.End,
+                            ) {
+                                Text(
+                                    "Seen",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 }
                 AnimatedVisibility(

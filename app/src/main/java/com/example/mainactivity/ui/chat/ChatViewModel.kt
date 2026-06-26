@@ -94,6 +94,10 @@ class ChatViewModel @Inject constructor(
     private val _currentParticipants = MutableStateFlow<List<UserModel>>(emptyList())
     val currentParticipants: StateFlow<List<UserModel>> = _currentParticipants.asStateFlow()
 
+    // Latest read timestamp among OTHER participants in the open conversation, for "Seen".
+    private val _otherLastRead = MutableStateFlow<String?>(null)
+    val otherLastRead: StateFlow<String?> = _otherLastRead.asStateFlow()
+
     private val _familyMembers = MutableStateFlow<List<UserModel>>(emptyList())
     val familyMembers: StateFlow<List<UserModel>> = _familyMembers.asStateFlow()
 
@@ -115,6 +119,7 @@ class ChatViewModel @Inject constructor(
 
     private var realtimeChannel: RealtimeChannel? = null
     private var reactionsChannel: RealtimeChannel? = null
+    private var participantsChannel: RealtimeChannel? = null
     private val notifChannels = mutableMapOf<String, RealtimeChannel>()
     private var pendingCameraConversationId: String = ""
     private var pendingCameraFile: File? = null
@@ -332,6 +337,8 @@ class ChatViewModel @Inject constructor(
                 _currentParticipants.value = participantUserIds.mapNotNull { _userProfiles.value[it] }
 
                 val userId = repo.currentUserId.first()
+                _otherLastRead.value =
+                    participantRows.filter { it.userId != userId }.mapNotNull { it.lastReadAt }.maxOrNull()
                 val user = if (userId != null) repo.getUser(userId) else null
                 if (user?.familyId != null && _familyMembers.value.isEmpty()) {
                     val members = repo.getFamilyMembers(user.familyId)
@@ -340,10 +347,36 @@ class ChatViewModel @Inject constructor(
                 }
 
                 subscribeToMessages(conversationId)
+                subscribeToParticipants(conversationId)
                 loadReactions(conversationId)
                 subscribeToReactions(conversationId)
             }
         }
+
+    /** Live-updates the "Seen" receipt when another participant's last_read_at changes. */
+    private suspend fun subscribeToParticipants(conversationId: String) {
+        participantsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+        val channel = SupabaseManager.client.channel("participants-$conversationId")
+        participantsChannel = channel
+        val flow =
+            channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "conversation_participants"
+                filter("conversation_id", FilterOperator.EQ, conversationId)
+            }
+        channel.subscribe()
+        viewModelScope.launch {
+            val myId = repo.currentUserId.first()
+            flow.collect {
+                val rows =
+                    db
+                        .from("conversation_participants")
+                        .select { filter { eq("conversation_id", conversationId) } }
+                        .decodeList<ConversationParticipantModel>()
+                _otherLastRead.value =
+                    rows.filter { it.userId != myId }.mapNotNull { it.lastReadAt }.maxOrNull()
+            }
+        }
+    }
 
     private suspend fun loadMessages(conversationId: String) {
         _messages.value =
@@ -854,6 +887,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             reactionsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
+            participantsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             notifChannels.values.forEach { ch ->
                 runCatching { SupabaseManager.client.realtime.removeChannel(ch) }
             }
