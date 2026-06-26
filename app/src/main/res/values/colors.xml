@@ -1,46 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- For Normal/Light Mode -->
-    <color name="colorPrimary">#1C3FAA</color>
-    <color name="colorPrimaryDark">#132A73</color>
-    <color name="colorAccent">#6C8CFF</color>
-    <color name="textColorPrimary">#0F172A</color>
-    <color name="backgroundColor">#F5F7FB</color>
-    <color name="textColor">#0F172A</color>
-    <color name="calenderBackgroundColor">#FFFFFF</color>
-    <color name="backgroundListItem">#FFFFFF</color>
-    <color name="headlineCardView">#0F172A</color>
-
-    <color name="Grey">#64748B</color>
-    <color name="ic_launcher_background">#FFFFFF</color>
-    <color name="tint">#64748B</color>
-    <color name="background">#F5F7FB</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="primary">#1C3FAA</color>
-    <color name="button">#1C3FAA</color>
-    <color name="secondary">#6C8CFF</color>
-    <color name="onBackground">#0F172A</color>
-    <color name="onSurface">#0F172A</color>
-    <color name="onPrimary">#FFFFFF</color>
-    <color name="black">#000000</color>
-
-    <!-- Datepicker -->
-    <color name="headerBackground">#1C3FAA</color>
-    <color name="calenderBackground">#FFFFFF</color>
-    <color name="selectedDay">#6C8CFF</color>
-    <color name="daysOfTheMonth">#0F172A</color>
-    <color name="daysOfTheWeek">#0F172A</color>
-    <color name="buttonColor">#1C3FAA</color>
-    <color name="backgroundTint">#FFFFFF</color>
-
-    <!-- AlertDialog -->
-    <color name="backgroundColorAlert">#FCFCFC</color>
-    <color name="textColorAlert">#000000</color>
-    <color name="buttonColorAlert">#1C3FAA</color>
-
-    <!-- TimePickerDialog -->
-    <color name="TimePickerAccent">#6C8CFF</color>
-    <color name="TimePickerColorControl">#1C3FAA</color>
-    <color name="backgroundColorTimePicker">#FFFFFF</color>
-</resources>
+    
+    <color name="ic_launcher_background">#5457E8</color>
+    <color name="splash_background">#5457E8</color>
+    </resources>

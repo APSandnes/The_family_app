@@ -11,6 +11,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.location.Geocoder
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,8 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -85,6 +86,7 @@ import com.google.maps.android.compose.rememberUpdatedMarkerState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @Composable
 fun FamilyMapScreen(
@@ -354,6 +356,13 @@ private suspend fun buildMarkerBitmap(
     return createInitialsBitmap(name, colorInt, sizePx)
 }
 
+private const val AVATAR_BORDER_STROKE_RATIO = 0.07f
+private const val AVATAR_BORDER_INSET_RATIO = 0.035f
+private const val AVATAR_INITIAL_TEXT_RATIO = 0.42f
+private const val SECONDS_PER_MINUTE = 60
+private const val SECONDS_PER_HOUR = 3600
+private const val SECONDS_PER_DAY = 86400
+
 private fun createInitialsBitmap(
     name: String,
     colorInt: Int,
@@ -370,9 +379,9 @@ private fun createInitialsBitmap(
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
             style = Paint.Style.STROKE
-            strokeWidth = sizePx * 0.07f
+            strokeWidth = sizePx * AVATAR_BORDER_STROKE_RATIO
         }
-    canvas.drawCircle(radius, radius, radius - sizePx * 0.035f, borderPaint)
+    canvas.drawCircle(radius, radius, radius - sizePx * AVATAR_BORDER_INSET_RATIO, borderPaint)
 
     val initial =
         name
@@ -384,7 +393,7 @@ private fun createInitialsBitmap(
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
             textAlign = Paint.Align.CENTER
-            textSize = sizePx * 0.42f
+            textSize = sizePx * AVATAR_INITIAL_TEXT_RATIO
             typeface = Typeface.DEFAULT_BOLD
         }
     val bounds = Rect()
@@ -422,9 +431,9 @@ private suspend fun loadCircularBitmap(
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
                 style = Paint.Style.STROKE
-                strokeWidth = sizePx * 0.07f
+                strokeWidth = sizePx * AVATAR_BORDER_STROKE_RATIO
             }
-        canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f - sizePx * 0.035f, borderPaint)
+        canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f - sizePx * AVATAR_BORDER_INSET_RATIO, borderPaint)
         output
     } catch (_: Exception) {
         null
@@ -441,9 +450,9 @@ private fun formatLastSeen(updatedAt: String?): String {
                 .between(instant, java.time.Instant.now())
                 .seconds
         when {
-            seconds < 60 -> "Just now" // also handles clock-skew futures (negative seconds)
-            seconds < 3600 -> "${seconds / 60} min ago"
-            seconds < 86400 -> "${seconds / 3600} hours ago"
+            seconds < SECONDS_PER_MINUTE -> "Just now" // also handles clock-skew futures (negative seconds)
+            seconds < SECONDS_PER_HOUR -> "${seconds / SECONDS_PER_MINUTE} min ago"
+            seconds < SECONDS_PER_DAY -> "${seconds / SECONDS_PER_HOUR} hours ago"
             else ->
                 instant
                     .atZone(java.time.ZoneId.systemDefault())
@@ -454,7 +463,7 @@ private fun formatLastSeen(updatedAt: String?): String {
                     )
         }
     } catch (_: Exception) {
-        "Unknown"
+        "Location shared"
     }
 }
 
@@ -491,6 +500,35 @@ private fun BackgroundPermissionCard(
     }
 }
 
+/** Reverse-geocodes each shared location to a short place name (locality / area), cached by
+ *  user id. Runs off the main thread; returns partial results as they resolve. */
+@Composable
+private fun rememberGeocodedPlaces(
+    locations: List<UserLocationModel>,
+    context: Context,
+): Map<String, String> {
+    val places = remember { mutableStateMapOf<String, String>() }
+    LaunchedEffect(locations) {
+        if (!Geocoder.isPresent()) return@LaunchedEffect
+        val geocoder = Geocoder(context, Locale.getDefault())
+        locations.forEach { loc ->
+            if (places.containsKey(loc.userId)) return@forEach
+            val place =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        @Suppress("DEPRECATION")
+                        geocoder
+                            .getFromLocation(loc.lat, loc.lng, 1)
+                            ?.firstOrNull()
+                            ?.let { it.locality ?: it.subAdminArea ?: it.thoroughfare ?: it.adminArea }
+                    }.getOrNull()
+                }
+            if (!place.isNullOrBlank()) places[loc.userId] = place
+        }
+    }
+    return places
+}
+
 @Composable
 private fun MemberLegend(
     locations: List<UserLocationModel>,
@@ -499,6 +537,8 @@ private fun MemberLegend(
     modifier: Modifier = Modifier,
 ) {
     val locationByUserId = locations.associateBy { it.userId }
+    val context = LocalContext.current
+    val places = rememberGeocodedPlaces(locations, context)
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -520,7 +560,10 @@ private fun MemberLegend(
                     val loc = locationByUserId[member.id]
                     val isSharing = loc != null
                     val rowAlpha = if (isSharing) 1f else 0.4f
-                    val statusText = if (isSharing) formatLastSeen(loc?.updatedAt) else "Not sharing"
+                    val lastSeen = if (isSharing) formatLastSeen(loc.updatedAt) else "Not sharing"
+                    val place = places[member.id]
+                    val statusText =
+                        if (isSharing && !place.isNullOrBlank()) "$place · $lastSeen" else lastSeen
                     val avatarColor =
                         member.avatarColor
                             .takeIf { it != 0 }

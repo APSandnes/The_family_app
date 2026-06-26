@@ -1,0 +1,24 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - profile
+  - settings
+---
+# Profile + Settings: open settings, toggle theme Dark -> Light (restores Light).
+- launchApp:
+    appId: com.example.mainactivity
+- tapOn: "Profile"
+- assertVisible: "Edit profile"
+- assertVisible: "Sign out"
+
+- tapOn: "Settings"
+- assertVisible: "Appearance"
+- assertVisible: "Notifications"
+
+# Theme switch round-trip
+- tapOn: "Dark"
+- tapOn: "Light"
+
+# Reminder lead-time chips
+- tapOn: "2 days"
+- tapOn: "1 day"

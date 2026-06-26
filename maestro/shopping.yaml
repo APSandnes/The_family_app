@@ -1,0 +1,39 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - shopping
+---
+# Shopping: open a list, add an item, complete it, delete it.
+- launchApp:
+    appId: com.example.mainactivity
+- assertVisible: "Quick access"
+- scrollUntilVisible:
+    element: "Shared lists"
+    direction: DOWN
+- tapOn: "Shared lists"
+- assertVisible: "Shopping lists"
+
+# Open the first list (cards have no stable text id).
+- tapOn:
+    point: "50%,19%"
+- assertVisible: "Add item…"
+
+# Add an item
+- tapOn: "Add item…"
+- inputText: "Maestro item"
+- hideKeyboard
+- tapOn:
+    point: "91%,88%" # send arrow
+- assertVisible: "Maestro item"
+
+# Complete it (checkbox) -> moves to Completed
+- tapOn: "Maestro item"
+- assertVisible: "Completed (1)"
+
+# Swipe-to-delete the completed item, then confirm it's gone
+- swipe:
+    start: "85%,42%"
+    end: "12%,42%"
+- tapOn:
+    point: "85%,42%"
+- assertNotVisible: "Maestro item"

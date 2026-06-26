@@ -14,6 +14,7 @@ data class UserModel(
     @SerialName("family_id") val familyId: String? = null,
     @SerialName("avatar_color") val avatarColor: Int = 0,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("last_active_at") val lastActiveAt: String? = null,
 )
 
 @Serializable
@@ -103,6 +104,17 @@ data class WishModel(
     @SerialName("user_id") val userId: String = "",
     val text: String = "",
     val checked: Boolean = false,
+    val link: String? = null,
+    val price: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
+)
+
+@Serializable
+data class WishReservationModel(
+    val id: String = "",
+    @SerialName("wish_id") val wishId: String = "",
+    @SerialName("reserved_by") val reservedBy: String = "",
+    @SerialName("created_at") val createdAt: String = "",
 )
 
 @Serializable
@@ -132,6 +144,7 @@ data class ConversationParticipantModel(
     @SerialName("conversation_id") val conversationId: String = "",
     @SerialName("user_id") val userId: String = "",
     @SerialName("joined_at") val joinedAt: String = "",
+    @SerialName("last_read_at") val lastReadAt: String? = null,
 )
 
 @Serializable

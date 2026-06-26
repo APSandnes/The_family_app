@@ -14,42 +14,44 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    internal val repo: FamilyRepository,
-) : ViewModel() {
-    val themeMode: StateFlow<ThemeMode> =
-        repo.themeMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
+class SettingsViewModel
+    @Inject
+    constructor(
+        internal val repo: FamilyRepository,
+    ) : ViewModel() {
+        val themeMode: StateFlow<ThemeMode> =
+            repo.themeMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
 
-    val notificationsEnabled: StateFlow<Boolean> =
-        repo.notificationsEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        val notificationsEnabled: StateFlow<Boolean> =
+            repo.notificationsEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val notifyDaysBefore: StateFlow<Int> =
-        repo.notifyDaysBefore.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
+        val notifyDaysBefore: StateFlow<Int> =
+            repo.notifyDaysBefore.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-    val locationVisible: StateFlow<Boolean> =
-        repo.locationVisible.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        val locationVisible: StateFlow<Boolean> =
+            repo.locationVisible.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    fun setThemeMode(mode: ThemeMode) =
-        viewModelScope.launch {
-            repo.setThemeMode(mode)
-        }
+        fun setThemeMode(mode: ThemeMode) =
+            viewModelScope.launch {
+                repo.setThemeMode(mode)
+            }
 
-    fun setNotificationsEnabled(
-        enabled: Boolean,
-        context: Context,
-    ) =
-        viewModelScope.launch {
-            repo.setNotificationsEnabled(enabled)
-            if (enabled) NotificationWorker.schedule(context) else NotificationWorker.cancel(context)
-        }
+        fun setNotificationsEnabled(
+            enabled: Boolean,
+            context: Context,
+        ) =
+            viewModelScope.launch {
+                repo.setNotificationsEnabled(enabled)
+                if (enabled) NotificationWorker.schedule(context) else NotificationWorker.cancel(context)
+            }
 
-    fun setNotifyDaysBefore(days: Int) =
-        viewModelScope.launch {
-            repo.setNotifyDaysBefore(days)
-        }
+        fun setNotifyDaysBefore(days: Int) =
+            viewModelScope.launch {
+                repo.setNotifyDaysBefore(days)
+            }
 
-    fun setLocationVisible(enabled: Boolean) =
-        viewModelScope.launch {
-            repo.setLocationVisible(enabled)
-        }
-}
+        fun setLocationVisible(enabled: Boolean) =
+            viewModelScope.launch {
+                repo.setLocationVisible(enabled)
+            }
+    }

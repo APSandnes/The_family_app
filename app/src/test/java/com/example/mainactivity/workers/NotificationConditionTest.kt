@@ -22,7 +22,6 @@ import java.time.LocalDate
  */
 @RunWith(JUnit4::class)
 class NotificationConditionTest {
-
     // Fixed "today" used across all tests for deterministic results
     private val today = LocalDate.of(2024, 6, 25)
 
@@ -30,7 +29,10 @@ class NotificationConditionTest {
      * Mirrors the condition in NotificationWorker.doWork() so tests stay coupled to
      * the real business rule without needing to spin up the full CoroutineWorker.
      */
-    private fun shouldNotify(daysUntil: Int, notifyDaysBefore: Int): Boolean =
+    private fun shouldNotify(
+        daysUntil: Int,
+        notifyDaysBefore: Int,
+    ): Boolean =
         daysUntil == 0 || (notifyDaysBefore > 0 && daysUntil == notifyDaysBefore)
 
     // ─────────────────────────────────────────────────────────────────────────

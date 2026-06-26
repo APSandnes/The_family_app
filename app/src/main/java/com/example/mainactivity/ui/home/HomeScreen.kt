@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Restaurant
@@ -50,9 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -63,12 +63,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.InitialAvatar
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListCard
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.RefreshOnResume
+import com.example.mainactivity.ui.components.SectionHeader
 import com.example.mainactivity.ui.theme.Amber500
 import com.example.mainactivity.ui.theme.Emerald500
 import com.example.mainactivity.ui.theme.Indigo500
@@ -157,12 +160,53 @@ fun HomeScreen(
         }
 
         when {
-            state.isLoading -> item(span = { GridItemSpan(maxLineSpan) }) { LoadingState() }
+            state.isLoading -> item(span = { GridItemSpan(maxLineSpan) }) { ListSkeleton(rows = 3) }
             state.loadError ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     ErrorBanner(message = "Couldn't load your data. Pull to refresh.")
                 }
-            else ->
+            else -> {
+                if (state.hasSummary) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        val tonight = state.tonightMeal
+                        val eventTitle = state.nextEventTitle
+                        val birthdayName = state.nextBirthdayName
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (tonight != null) {
+                                SummaryCard(Icons.Filled.Restaurant, Amber500, "TONIGHT", tonight, null) { onOpen("meal") }
+                            }
+                            if (eventTitle != null) {
+                                SummaryCard(
+                                    Icons.Filled.CalendarMonth,
+                                    Teal500,
+                                    "NEXT EVENT",
+                                    eventTitle,
+                                    state.nextEventWhen,
+                                ) { onOpen("calendar") }
+                            }
+                            if (state.shoppingRemaining > 0) {
+                                SummaryCard(
+                                    Icons.Filled.ShoppingCart,
+                                    Indigo500,
+                                    "SHOPPING",
+                                    "${state.shoppingRemaining} left to buy",
+                                    null,
+                                ) { onOpen("shopping") }
+                            }
+                            if (birthdayName != null) {
+                                SummaryCard(
+                                    Icons.Filled.Cake,
+                                    Pink500,
+                                    "NEXT BIRTHDAY",
+                                    birthdayName,
+                                    state.nextBirthdayWhen,
+                                ) { onOpen("birthday") }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            SectionHeader("Quick access")
+                        }
+                    }
+                }
                 items(features) { feature ->
                     FeatureTile(
                         feature = feature,
@@ -170,7 +214,56 @@ fun HomeScreen(
                         onClick = { onOpen(feature.route) },
                     )
                 }
+            }
         }
+    }
+}
+
+@Composable
+private fun SummaryCard(
+    icon: ImageVector,
+    accent: Color,
+    label: String,
+    value: String,
+    detail: String?,
+    onClick: () -> Unit,
+) {
+    val iconBrush = remember(accent) { Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.7f))) }
+    ListCard(onClick = onClick) {
+        Box(
+            Modifier
+                .size(44.dp)
+                .background(iconBrush, RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.size(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (detail != null) {
+                Text(
+                    detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

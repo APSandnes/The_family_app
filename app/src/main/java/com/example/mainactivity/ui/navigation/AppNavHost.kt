@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +58,7 @@ import com.example.mainactivity.ui.chat.ChatScreen
 import com.example.mainactivity.ui.chat.ChatViewModel
 import com.example.mainactivity.ui.chat.ConversationScreen
 import com.example.mainactivity.ui.family.FamilyScreen
+import com.example.mainactivity.ui.family.FamilyViewModel
 import com.example.mainactivity.ui.home.HomeScreen
 import com.example.mainactivity.ui.map.FamilyMapScreen
 import com.example.mainactivity.ui.meal.MealDetailScreen
@@ -135,6 +138,7 @@ private fun MainFlow() {
     // Shared so the list (ChatScreen) and detail (ConversationScreen) use the SAME
     // instance — a delete in the detail screen must reflect in the list on pop-back.
     val chatVm: ChatViewModel = hiltViewModel()
+    val familyVm: FamilyViewModel = hiltViewModel()
 
     val chatUnread by chatVm.totalUnread.collectAsStateWithLifecycle()
 
@@ -142,6 +146,15 @@ private fun MainFlow() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomDestinations.map { it.route }
+
+    // An invite deep link (familyapp://join?code=…) routes the user to Family,
+    // which opens the join flow pre-filled with the code.
+    val pendingJoin by familyVm.pendingJoinCode.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingJoin) {
+        if (pendingJoin != null) {
+            navController.navigate(Routes.FAMILY) { launchSingleTop = true }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -205,7 +218,9 @@ private fun MainFlow() {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding),
+            // Consume the scaffold insets so each screen's own Scaffold doesn't re-apply the
+            // bottom navigation-bar inset (which doubled the gap below FABs above the nav bar).
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             // Default: iOS-style horizontal slide for detail/feature screens
             enterTransition = { slideInHorizontally(tween(300)) { it } + fadeIn(tween(300)) },
             exitTransition = { slideOutHorizontally(tween(300)) { -it / 3 } + fadeOut(tween(200)) },
@@ -245,7 +260,7 @@ private fun MainFlow() {
                 exitTransition = { fadeOut(tween(200)) },
                 popEnterTransition = { fadeIn(tween(200)) },
                 popExitTransition = { fadeOut(tween(200)) },
-            ) { FamilyScreen() }
+            ) { FamilyScreen(viewModel = familyVm) }
             composable(
                 Routes.PROFILE,
                 enterTransition = { fadeIn(tween(200)) },

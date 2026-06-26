@@ -53,8 +53,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.BuildConfig
 import com.example.mainactivity.data.ThemeMode
 import com.example.mainactivity.ui.components.FeatureTopBar
@@ -309,8 +309,7 @@ private fun ThemeOption(
                 .background(bg)
                 .semantics {
                     contentDescription = "$label theme${if (selected) ", selected" else ""}"
-                }
-                .clickable(onClick = onClick)
+                }.clickable(onClick = onClick)
                 .heightIn(min = 48.dp)
                 .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -374,9 +373,10 @@ private fun AboutSection() {
                 Icons.Filled.Info,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier
-                    .padding(12.dp)
-                    .size(24.dp),
+                modifier =
+                    Modifier
+                        .padding(12.dp)
+                        .size(24.dp),
             )
         }
         Spacer(Modifier.size(12.dp))

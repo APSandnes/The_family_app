@@ -32,6 +32,9 @@ object NotificationHelper {
     const val CHANNEL_CALENDAR = "channel_calendar"
     const val KEY_TEXT_REPLY = "key_text_reply"
 
+    private const val AVATAR_BITMAP_SIZE = 96
+    private const val AVATAR_TEXT_RATIO = 0.45f
+
     fun createAllChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -83,49 +86,13 @@ object NotificationHelper {
                     ),
                 )
 
-        val remoteInput =
-            RemoteInput
-                .Builder(KEY_TEXT_REPLY)
-                .setLabel("Reply")
-                .build()
-
-        val replyIntent =
-            PendingIntent.getBroadcast(
-                context,
-                conversation.id.hashCode(),
-                Intent(context, ReplyReceiver::class.java).apply {
-                    putExtra("conversation_id", conversation.id)
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-            )
-
-        val replyAction =
-            NotificationCompat.Action
-                .Builder(
-                    android.R.drawable.ic_menu_send,
-                    "Reply",
-                    replyIntent,
-                ).addRemoteInput(remoteInput)
-                .build()
-
-        val openIntent =
-            PendingIntent.getActivity(
-                context,
-                conversation.id.hashCode() + 1,
-                Intent(context, MainActivity::class.java).apply {
-                    data = android.net.Uri.parse("familyapp://chat/${conversation.id}")
-                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
         val notification =
             NotificationCompat
                 .Builder(context, CHANNEL_MESSAGES)
                 .setSmallIcon(android.R.drawable.ic_dialog_email)
                 .setStyle(messagingStyle)
-                .addAction(replyAction)
-                .setContentIntent(openIntent)
+                .addAction(buildReplyAction(context, conversation))
+                .setContentIntent(buildOpenIntent(context, conversation))
                 .setAutoCancel(true)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -141,15 +108,49 @@ object NotificationHelper {
         }
     }
 
+    private fun buildReplyAction(
+        context: Context,
+        conversation: ConversationModel,
+    ): NotificationCompat.Action {
+        val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY).setLabel("Reply").build()
+        val replyIntent =
+            PendingIntent.getBroadcast(
+                context,
+                conversation.id.hashCode(),
+                Intent(context, ReplyReceiver::class.java).apply {
+                    putExtra("conversation_id", conversation.id)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
+        return NotificationCompat.Action
+            .Builder(android.R.drawable.ic_menu_send, "Reply", replyIntent)
+            .addRemoteInput(remoteInput)
+            .build()
+    }
+
+    private fun buildOpenIntent(
+        context: Context,
+        conversation: ConversationModel,
+    ): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            conversation.id.hashCode() + 1,
+            Intent(context, MainActivity::class.java).apply {
+                data = android.net.Uri.parse("familyapp://chat/${conversation.id}")
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
     private fun createInitialBitmap(name: String): Bitmap {
-        val size = 96
+        val size = AVATAR_BITMAP_SIZE
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.color = android.graphics.Color.parseColor("#6366F1")
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
         paint.color = android.graphics.Color.WHITE
-        paint.textSize = size * 0.45f
+        paint.textSize = size * AVATAR_TEXT_RATIO
         paint.typeface = Typeface.DEFAULT_BOLD
         paint.textAlign = Paint.Align.CENTER
         val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "?"

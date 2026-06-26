@@ -1,0 +1,39 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - wishlists
+---
+# Wishlists: open own list, add a rich wish (text/link/price), delete it.
+- launchApp:
+    appId: com.example.mainactivity
+- assertVisible: "Quick access"
+- scrollUntilVisible:
+    element: "Gift ideas"
+    direction: DOWN
+- tapOn: "Gift ideas"
+- assertVisible: "Wishlists"
+
+# Open the first wishlist
+- tapOn:
+    point: "50%,19%"
+
+# Add a wish (rich dialog). The full-width button OR the FAB both say "Add a wish".
+- tapOn: "Add a wish"
+- assertVisible: "What do you wish for?"
+- tapOn: "What do you wish for?"
+- inputText: "Maestro wish"
+- tapOn: "Link (optional)"
+- inputText: "https://example.com"
+- tapOn: "Price (optional)"
+- inputText: "99"
+- hideKeyboard
+- tapOn: "Add"
+- assertVisible: "Maestro wish"
+
+# Swipe-to-delete the wish
+- swipe:
+    start: "85%,18%"
+    end: "12%,18%"
+- tapOn:
+    point: "85%,18%"
+- assertNotVisible: "Maestro wish"

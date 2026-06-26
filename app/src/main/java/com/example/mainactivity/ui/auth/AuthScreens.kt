@@ -18,8 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -61,8 +62,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.ui.components.BirthdayPickerField
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
@@ -129,13 +130,14 @@ fun LoginScreen(
             leadingIcon = Icons.Outlined.Lock,
             isPassword = true,
             imeAction = ImeAction.Done,
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (email.isNotBlank() && password.isNotBlank() && !state.loading) {
-                        viewModel.login(email, password)
-                    }
-                },
-            ),
+            keyboardActions =
+                KeyboardActions(
+                    onDone = {
+                        if (email.isNotBlank() && password.isNotBlank() && !state.loading) {
+                            viewModel.login(email, password)
+                        }
+                    },
+                ),
             enabled = !state.loading,
             modifier = Modifier.semantics { contentDescription = "Password field" },
         )
@@ -156,6 +158,12 @@ fun LoginScreen(
             loading = state.loading,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Sign in button" },
         )
+        Spacer(Modifier.height(12.dp))
+        SecondaryButton(
+            text = "Continue with Google",
+            onClick = { viewModel.signInWithGoogle() },
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Continue with Google button" },
+        )
         AuthFooter(
             prompt = "New to The Family App?",
             action = "Create account",
@@ -171,7 +179,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var step by rememberSaveable { mutableStateOf(1) }
+    var step by rememberSaveable { mutableIntStateOf(1) }
 
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
@@ -244,7 +252,7 @@ fun RegisterScreen(
                         step = 1
                         viewModel.clearError()
                     },
-                    onSubmit = { viewModel.register(name, email, password, confirm, birthday, mobile) },
+                    onSubmit = { viewModel.register(RegistrationForm(name, email, password, confirm, birthday, mobile)) },
                 )
         }
         if (step == 1) {
@@ -282,8 +290,7 @@ private fun StepIndicator(
                                 width = if (isActive || isCompleted) 0.dp else 1.5.dp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                                 shape = CircleShape,
-                            )
-                            .clip(CircleShape)
+                            ).clip(CircleShape)
                             .background(
                                 if (isActive || isCompleted) {
                                     MaterialTheme.colorScheme.primary
@@ -325,32 +332,38 @@ private fun StepIndicator(
     }
 }
 
+private const val MIN_PASSWORD_LENGTH = 6
+private const val STRONG_PASSWORD_LENGTH = 8
+private const val MAX_PASSWORD_SCORE = 3
+
 /** Calculates password strength score 0-3 based on length and character variety. */
 private fun passwordStrength(password: String): Int {
-    if (password.length < 6) return 0
+    if (password.length < MIN_PASSWORD_LENGTH) return 0
     var score = 1 // at least 6 chars = minimum score of 1
-    if (password.length >= 8) score++
+    if (password.length >= STRONG_PASSWORD_LENGTH) score++
     if (password.any { it.isUpperCase() } && password.any { it.isLowerCase() }) score++
     if (password.any { !it.isLetterOrDigit() }) score++
-    return score.coerceIn(0, 3)
+    return score.coerceIn(0, MAX_PASSWORD_SCORE)
 }
 
 @Composable
 private fun PasswordStrengthBar(password: String) {
     if (password.isEmpty()) return
     val strength = passwordStrength(password)
-    val label = when (strength) {
-        0 -> "Too short"
-        1 -> "Weak"
-        2 -> "Medium"
-        3 -> "Strong"
-        else -> "Strong"
-    }
-    val color = when (strength) {
-        0, 1 -> MaterialTheme.colorScheme.error
-        2 -> Amber500
-        else -> Emerald500
-    }
+    val label =
+        when (strength) {
+            0 -> "Too short"
+            1 -> "Weak"
+            2 -> "Medium"
+            3 -> "Strong"
+            else -> "Strong"
+        }
+    val color =
+        when (strength) {
+            0, 1 -> MaterialTheme.colorScheme.error
+            2 -> Amber500
+            else -> Emerald500
+        }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -361,11 +374,12 @@ private fun PasswordStrengthBar(password: String) {
         ) {
             for (i in 1..3) {
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(if (i <= strength) color else MaterialTheme.colorScheme.surfaceVariant),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(if (i <= strength) color else MaterialTheme.colorScheme.surfaceVariant),
                 )
             }
         }
@@ -413,9 +427,10 @@ private fun RegistrationStep1(
         imeAction = ImeAction.Next,
         keyboardActions = KeyboardActions(onNext = { passwordFocus.requestFocus() }),
         enabled = !loading,
-        modifier = Modifier
-            .focusRequester(emailFocus)
-            .semantics { contentDescription = "Email address field" },
+        modifier =
+            Modifier
+                .focusRequester(emailFocus)
+                .semantics { contentDescription = "Email address field" },
     )
     FamilyTextField(
         value = password,
@@ -426,9 +441,10 @@ private fun RegistrationStep1(
         imeAction = ImeAction.Next,
         keyboardActions = KeyboardActions(onNext = { confirmFocus.requestFocus() }),
         enabled = !loading,
-        modifier = Modifier
-            .focusRequester(passwordFocus)
-            .semantics { contentDescription = "Password field" },
+        modifier =
+            Modifier
+                .focusRequester(passwordFocus)
+                .semantics { contentDescription = "Password field" },
     )
     PasswordStrengthBar(password)
     FamilyTextField(
@@ -440,9 +456,10 @@ private fun RegistrationStep1(
         imeAction = ImeAction.Done,
         keyboardActions = KeyboardActions(onDone = { onNext() }),
         enabled = !loading,
-        modifier = Modifier
-            .focusRequester(confirmFocus)
-            .semantics { contentDescription = "Confirm password field" },
+        modifier =
+            Modifier
+                .focusRequester(confirmFocus)
+                .semantics { contentDescription = "Confirm password field" },
     )
     Spacer(Modifier.height(4.dp))
     PrimaryButton(
@@ -450,9 +467,10 @@ private fun RegistrationStep1(
         onClick = onNext,
         enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && confirm.isNotBlank(),
         loading = loading,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = "Continue to next step button" },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Continue to next step button" },
     )
 }
 
@@ -502,9 +520,10 @@ private fun RegistrationStep2(
         text = "Create account",
         onClick = onSubmit,
         loading = loading,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = "Create account button" },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Create account button" },
     )
     SecondaryButton(
         text = "Back",
