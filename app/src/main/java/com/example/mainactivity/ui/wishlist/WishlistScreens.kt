@@ -2,6 +2,11 @@
 
 package com.example.mainactivity.ui.wishlist
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,7 +18,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,11 +28,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.CardGiftcard
@@ -36,8 +43,10 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Restaurant
@@ -67,13 +76,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import com.example.mainactivity.data.WishModel
 import com.example.mainactivity.data.WishReservationModel
 import com.example.mainactivity.ui.components.AppFab
@@ -81,7 +94,9 @@ import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.ListCard
 import com.example.mainactivity.ui.components.ListSkeleton
+import com.example.mainactivity.ui.components.PrimaryButton
 import com.example.mainactivity.ui.components.RefreshOnResume
+import com.example.mainactivity.ui.components.SecondaryButton
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
 // ─── Icon catalogue ──────────────────────────────────────────────────────────
@@ -219,7 +234,7 @@ fun WishlistDetailScreen(
     val wishlist by viewModel.selectedWishlist.collectAsStateWithLifecycle()
     val wishes by viewModel.wishes.collectAsStateWithLifecycle()
 
-    var newWishText by remember { mutableStateOf("") }
+    var showAddWish by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val reservations by viewModel.reservations.collectAsStateWithLifecycle()
@@ -271,52 +286,16 @@ fun WishlistDetailScreen(
                     shadowElevation = 4.dp,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .imePadding(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
-                        value = newWishText,
-                        onValueChange = { newWishText = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Add a wish…") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                    PrimaryButton(
+                        text = "Add a wish",
+                        onClick = { showAddWish = true },
+                        leadingIcon = Icons.Filled.Add,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            val text = newWishText.trim()
-                            if (text.isNotEmpty()) {
-                                viewModel.addWish(wishlistId, text)
-                                newWishText = ""
-                            }
-                        },
-                        enabled = newWishText.isNotBlank(),
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Add wish",
-                            tint =
-                                if (newWishText.isNotBlank()) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                    }
                 }
-            }
             }
         },
     ) { padding ->
@@ -381,8 +360,9 @@ fun WishlistDetailScreen(
                                             },
                                     )
                                 }
+                                WishLeadingThumb(wish.imageUrl)
                                 Text(
-                                    wish.text,
+                                    wishTitle(wish),
                                     Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color =
@@ -393,6 +373,7 @@ fun WishlistDetailScreen(
                                         },
                                     textDecoration = if (wish.checked) TextDecoration.LineThrough else TextDecoration.None,
                                 )
+                                WishLinkButton(wish.link)
                             }
                         }
                     }
@@ -422,6 +403,136 @@ fun WishlistDetailScreen(
             },
         )
     }
+
+    if (showAddWish) {
+        val context = LocalContext.current
+        AddWishDialog(
+            onDismiss = { showAddWish = false },
+            onConfirm = { text, link, price, image ->
+                viewModel.addWish(context, wishlistId, text, link, price, image)
+                showAddWish = false
+            },
+        )
+    }
+}
+
+/** Title with the price appended inline (e.g. "Lego set  ·  $50"). */
+private fun wishTitle(wish: WishModel): String =
+    wish.text + (wish.price?.takeIf { it.isNotBlank() }?.let { "  ·  $it" } ?: "")
+
+/** Leading wish image thumbnail, shown only when the wish has an image. */
+@Composable
+private fun RowScope.WishLeadingThumb(url: String?) {
+    if (!url.isNullOrBlank()) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)),
+        )
+        Spacer(Modifier.width(10.dp))
+    }
+}
+
+/** Opens the wish's link in the browser; shown only when the wish has a link. */
+@Composable
+private fun WishLinkButton(link: String?) {
+    if (!link.isNullOrBlank()) {
+        val context = LocalContext.current
+        IconButton(onClick = {
+            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link))) }
+        }) {
+            Icon(Icons.Filled.OpenInNew, contentDescription = "Open link", tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+/** Rich add-wish flow: title (required) + optional link, price, and image. */
+@Composable
+private fun AddWishDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (text: String, link: String, price: String, image: Uri?) -> Unit,
+) {
+    var title by remember { mutableStateOf("") }
+    var link by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+    var image by remember { mutableStateOf<Uri?>(null) }
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) image = uri
+        }
+    val fieldColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+        )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("Add a wish", style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = { Text("What do you wish for?") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors,
+                )
+                OutlinedTextField(
+                    value = link,
+                    onValueChange = { link = it },
+                    placeholder = { Text("Link (optional)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors,
+                )
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { price = it },
+                    placeholder = { Text("Price (optional)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors,
+                )
+                if (image != null) {
+                    AsyncImage(
+                        model = image,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                    )
+                }
+                SecondaryButton(
+                    text = if (image == null) "Add image" else "Change image",
+                    onClick = {
+                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Filled.Image,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (title.isNotBlank()) onConfirm(title.trim(), link, price, image) },
+                enabled = title.isNotBlank(),
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 /** A wish as seen by a NON-owner family member: title + reserve/claim control.
@@ -445,12 +556,14 @@ private fun MemberWishCard(
             Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            WishLeadingThumb(wish.imageUrl)
             Text(
-                wish.text,
+                wishTitle(wish),
                 Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            WishLinkButton(wish.link)
             Spacer(Modifier.width(8.dp))
             when {
                 reservation == null ->

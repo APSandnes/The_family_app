@@ -1,5 +1,7 @@
 package com.example.mainactivity.ui.wishlist
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mainactivity.data.FamilyRepository
@@ -15,8 +17,11 @@ import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -333,24 +338,61 @@ class WishlistViewModel @Inject constructor(
     }
 
     fun addWish(
+        context: Context,
         wishlistId: String,
         text: String,
+        link: String? = null,
+        price: String? = null,
+        imageUri: Uri? = null,
     ) =
         viewModelScope.launch {
             val userId = repo.currentUserId.first() ?: return@launch
+            val cleanLink = link?.trim()?.takeIf { it.isNotEmpty() }
+            val cleanPrice = price?.trim()?.takeIf { it.isNotEmpty() }
             val tempId = "temp-${System.currentTimeMillis()}"
-            _wishes.value = _wishes.value + WishModel(id = tempId, wishlistId = wishlistId, userId = userId, text = text, checked = false)
+            _wishes.value =
+                _wishes.value +
+                WishModel(
+                    id = tempId,
+                    wishlistId = wishlistId,
+                    userId = userId,
+                    text = text,
+                    checked = false,
+                    link = cleanLink,
+                    price = cleanPrice,
+                )
+            val imageUrl = imageUri?.let { uploadWishImage(context, userId, it) }
             runCatching {
                 db.from("wishes").insert(
                     buildJsonObject {
                         put("wishlist_id", wishlistId)
                         put("user_id", userId)
                         put("text", text)
+                        if (cleanLink != null) put("link", cleanLink)
+                        if (cleanPrice != null) put("price", cleanPrice)
+                        if (imageUrl != null) put("image_url", imageUrl)
                     },
                 )
             }
             loadWishlistDetail(wishlistId).join()
         }
+
+    /** Uploads a wish image to the dedicated wish-images bucket; returns its public URL or null. */
+    private suspend fun uploadWishImage(
+        context: Context,
+        userId: String,
+        uri: Uri,
+    ): String? =
+        runCatching {
+            val bytes =
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: return null
+            val path = "$userId/${System.currentTimeMillis()}.jpg"
+            val bucket = SupabaseManager.client.storage.from("wish-images")
+            bucket.upload(path, bytes) { upsert = true }
+            bucket.publicUrl(path)
+        }.getOrNull()
 
     fun toggle(wish: WishModel) =
         viewModelScope.launch {

@@ -103,6 +103,9 @@ data class WishModel(
     @SerialName("user_id") val userId: String = "",
     val text: String = "",
     val checked: Boolean = false,
+    val link: String? = null,
+    val price: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
 )
 
 @Serializable
