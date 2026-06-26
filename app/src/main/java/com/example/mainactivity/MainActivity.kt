@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.ThemeMode
 import com.example.mainactivity.data.remote.SupabaseManager
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var repo: FamilyRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         NotificationHelper.createAllChannels(this)

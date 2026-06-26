@@ -26,6 +26,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.TheFamilyApp.Starting"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:launchMode="singleTop">
