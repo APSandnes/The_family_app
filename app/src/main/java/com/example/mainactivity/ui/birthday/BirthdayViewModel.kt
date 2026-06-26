@@ -116,7 +116,7 @@ class BirthdayViewModel
             // Guard: skip if already subscribed to this family to prevent subscription churn.
             if (subscribedFamilyId == familyId && realtimeChannel != null) return
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("birthdays-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("birthdays-$familyId") }.getOrNull() ?: return
             realtimeChannel = channel
             subscribedFamilyId = familyId
             val flow =

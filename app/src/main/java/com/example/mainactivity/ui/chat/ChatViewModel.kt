@@ -264,7 +264,7 @@ class ChatViewModel
             _conversations.value.forEach { preview ->
                 val convId = preview.conversation.id
                 if (notifChannels.containsKey(convId)) return@forEach
-                val channel = SupabaseManager.client.channel("notify-$convId")
+                val channel = runCatching { SupabaseManager.client.channel("notify-$convId") }.getOrNull() ?: return
                 notifChannels[convId] = channel
                 val insertFlow =
                     channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
@@ -380,7 +380,7 @@ class ChatViewModel
         /** Live-updates the "Seen" receipt when another participant's last_read_at changes. */
         private suspend fun subscribeToParticipants(conversationId: String) {
             participantsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("participants-$conversationId")
+            val channel = runCatching { SupabaseManager.client.channel("participants-$conversationId") }.getOrNull() ?: return
             participantsChannel = channel
             val flow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {
@@ -406,7 +406,7 @@ class ChatViewModel
         private suspend fun subscribeToTyping(conversationId: String) {
             typingChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             _typingUsers.value = emptySet()
-            val channel = SupabaseManager.client.channel("typing-$conversationId")
+            val channel = runCatching { SupabaseManager.client.channel("typing-$conversationId") }.getOrNull() ?: return
             typingChannel = channel
             val flow = channel.broadcastFlow<TypingSignal>("typing")
             channel.subscribe()
@@ -453,7 +453,7 @@ class ChatViewModel
 
         private suspend fun subscribeToMessages(conversationId: String) {
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("messages-$conversationId")
+            val channel = runCatching { SupabaseManager.client.channel("messages-$conversationId") }.getOrNull() ?: return
             realtimeChannel = channel
             val insertFlow =
                 channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
@@ -495,7 +495,7 @@ class ChatViewModel
 
         private suspend fun subscribeToReactions(conversationId: String) {
             reactionsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("reactions-$conversationId")
+            val channel = runCatching { SupabaseManager.client.channel("reactions-$conversationId") }.getOrNull() ?: return
             reactionsChannel = channel
             val insertFlow =
                 channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {

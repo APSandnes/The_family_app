@@ -197,7 +197,7 @@ class ShoppingViewModel
             if (subscribedListsFamilyId == familyId) return
             realtimeListsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             subscribedListsFamilyId = familyId
-            val channel = SupabaseManager.client.channel("shopping-lists-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("shopping-lists-$familyId") }.getOrNull() ?: return
             realtimeListsChannel = channel
             val flow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {
@@ -269,7 +269,7 @@ class ShoppingViewModel
             if (subscribedItemsListId == listId) return
             realtimeItemsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
             subscribedItemsListId = listId
-            val channel = SupabaseManager.client.channel("shopping-items-$listId")
+            val channel = runCatching { SupabaseManager.client.channel("shopping-items-$listId") }.getOrNull() ?: return
             realtimeItemsChannel = channel
             val flow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {
@@ -287,7 +287,7 @@ class ShoppingViewModel
         ) = viewModelScope.launch {
             val userId = repo.currentUserId.first() ?: return@launch
             val user = repo.getUser(userId)
-            val tempId = "temp-${System.currentTimeMillis()}"
+            val tempId = "temp-${java.util.UUID.randomUUID()}"
             _lists.value = _lists.value + ShoppingListModel(id = tempId, title = title, ownerUserId = userId, familyId = user?.familyId, icon = icon)
             runCatching {
                 db.from("shopping_lists").insert(
@@ -328,7 +328,7 @@ class ShoppingViewModel
             item: String,
         ) =
             viewModelScope.launch {
-                val tempId = "temp-${System.currentTimeMillis()}"
+                val tempId = "temp-${java.util.UUID.randomUUID()}"
                 _items.value = _items.value + ShoppingItemModel(id = tempId, listId = listId, item = item, checked = false)
                 runCatching {
                     db.from("shopping_items").insert(

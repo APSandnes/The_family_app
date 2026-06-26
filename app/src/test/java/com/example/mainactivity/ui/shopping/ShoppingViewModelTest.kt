@@ -51,6 +51,7 @@ class ShoppingViewModelTest {
         // needs a platform); stub it so runCatching-wrapped DB calls fail fast instead.
         mockkObject(SupabaseManager)
         every { SupabaseManager.client } throws RuntimeException("Supabase client not available in unit tests")
+        resetCompanionCache()
         repo = mockk(relaxed = true)
         userId = MutableStateFlow(null)
         familyChanged = MutableSharedFlow()
@@ -60,6 +61,16 @@ class ShoppingViewModelTest {
         // (avoids the Supabase Realtime WebSocket path in tests).
         coEvery { repo.getUser(any()) } returns UserModel(id = "user1", familyId = null)
         vm = ShoppingViewModel(repo)
+    }
+
+    /**
+     * Clears the companion-object `cache` (a private static field on ShoppingViewModel)
+     * between tests so optimistic mutations can't bleed into the next test.
+     */
+    private fun resetCompanionCache() {
+        val cacheField = ShoppingViewModel::class.java.getDeclaredField("cache")
+        cacheField.isAccessible = true
+        cacheField.set(null, emptyList<Any?>())
     }
 
     // ──────────────────────────────────────────────────────────────

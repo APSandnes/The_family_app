@@ -156,7 +156,7 @@ class MealViewModel
                 viewModelScope.launch { runCatching { SupabaseManager.client.realtime.removeChannel(old) } }
             }
 
-            val channel = SupabaseManager.client.channel("meal-plans-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("meal-plans-$familyId") }.getOrNull() ?: return
             realtimeChannel = channel
             val flow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {

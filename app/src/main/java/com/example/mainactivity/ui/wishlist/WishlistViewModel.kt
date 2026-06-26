@@ -166,7 +166,7 @@ class WishlistViewModel
             // Guard: if already subscribed to the same family, don't re-subscribe
             if (subscribedFamilyId == familyId && realtimeWishlistsChannel != null) return
             realtimeWishlistsChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("wishlists-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("wishlists-$familyId") }.getOrNull() ?: return
             realtimeWishlistsChannel = channel
             subscribedFamilyId = familyId
             val flow =
@@ -271,7 +271,7 @@ class WishlistViewModel
             // Guard: if already subscribed to this wishlist, don't re-subscribe
             if (subscribedWishesListId == wishlistId && realtimeWishesChannel != null) return
             realtimeWishesChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("wishes-$wishlistId")
+            val channel = runCatching { SupabaseManager.client.channel("wishes-$wishlistId") }.getOrNull() ?: return
             realtimeWishesChannel = channel
             subscribedWishesListId = wishlistId
             val flow =

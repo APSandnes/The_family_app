@@ -106,7 +106,7 @@ class FamilyMapViewModel
 
         private suspend fun subscribeToLocations(familyId: String) {
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("locations-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("locations-$familyId") }.getOrNull() ?: return
             realtimeChannel = channel
             val changeFlow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {

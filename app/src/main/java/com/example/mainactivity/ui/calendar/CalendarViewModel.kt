@@ -128,7 +128,7 @@ class CalendarViewModel
             userId: String,
         ) {
             realtimeChannel?.let { runCatching { SupabaseManager.client.realtime.removeChannel(it) } }
-            val channel = SupabaseManager.client.channel("calendar-$familyId")
+            val channel = runCatching { SupabaseManager.client.channel("calendar-$familyId") }.getOrNull() ?: return
             realtimeChannel = channel
             val flow =
                 channel.postgresChangeFlow<PostgresAction>(schema = "public") {
