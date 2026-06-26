@@ -5,7 +5,9 @@ import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
+import com.example.mainactivity.data.remote.SupabaseManager
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +47,10 @@ class ShoppingViewModelTest {
 
     @Before
     fun setUp() {
+        // The real Supabase client can't initialise in plain JUnit (Auth SettingsSessionManager
+        // needs a platform); stub it so runCatching-wrapped DB calls fail fast instead.
+        mockkObject(SupabaseManager)
+        every { SupabaseManager.client } throws RuntimeException("Supabase client not available in unit tests")
         repo = mockk(relaxed = true)
         userId = MutableStateFlow(null)
         familyChanged = MutableSharedFlow()

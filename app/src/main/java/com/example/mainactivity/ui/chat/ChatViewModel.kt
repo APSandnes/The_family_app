@@ -159,7 +159,7 @@ class ChatViewModel
             }
             viewModelScope.launch {
                 var seenDisconnect = false
-                SupabaseManager.client.realtime.status.collect { status ->
+                runCatching { SupabaseManager.client.realtime.status }.getOrNull()?.collect { status ->
                     when (status) {
                         Realtime.Status.DISCONNECTED -> seenDisconnect = true
                         Realtime.Status.CONNECTED ->
