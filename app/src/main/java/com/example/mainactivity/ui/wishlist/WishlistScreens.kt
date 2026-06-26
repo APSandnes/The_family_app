@@ -66,6 +66,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
@@ -76,7 +78,7 @@ import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.ListCard
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
@@ -129,9 +131,7 @@ fun WishlistScreen(
     ) { padding ->
         when {
             isLoading -> {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    LoadingState()
-                }
+                ListSkeleton(Modifier.fillMaxSize().padding(padding))
             }
             wishlists.isEmpty() -> {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
@@ -139,6 +139,8 @@ fun WishlistScreen(
                         Icons.Filled.CardGiftcard,
                         "No wishlists yet",
                         "Create a wishlist to share with your family",
+                        actionLabel = "New wishlist",
+                        onAction = { showAdd = true },
                     )
                 }
             }
@@ -149,7 +151,11 @@ fun WishlistScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(wishlists, key = { it.id }) { wl ->
-                        SwipeToRevealDelete(onDelete = { viewModel.deleteWishlist(wl) }, shape = RoundedCornerShape(20.dp)) {
+                        SwipeToRevealDelete(
+                            onDelete = { viewModel.deleteWishlist(wl) },
+                            modifier = Modifier.animateItem(),
+                            shape = RoundedCornerShape(20.dp),
+                        ) {
                             ListCard(onClick = { onOpen(wl.id) }) {
                                 // Large icon in colored circle
                                 Box(
@@ -212,6 +218,7 @@ fun WishlistDetailScreen(
     val wishes by viewModel.wishes.collectAsStateWithLifecycle()
 
     var newWishText by remember { mutableStateOf("") }
+    val haptics = LocalHapticFeedback.current
     var showMenu by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var showChangeIconDialog by remember { mutableStateOf(false) }
@@ -317,9 +324,16 @@ fun WishlistDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(sortedWishes, key = { it.id }) { wish ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteWish(wish) }, shape = RoundedCornerShape(16.dp)) {
+                    SwipeToRevealDelete(
+                        onDelete = { viewModel.deleteWish(wish) },
+                        modifier = Modifier.animateItem(),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
                         Surface(
-                            onClick = { viewModel.toggle(wish) },
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.toggle(wish)
+                            },
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surface,
                             modifier =
@@ -333,7 +347,10 @@ fun WishlistDetailScreen(
                                 Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                IconButton(onClick = { viewModel.toggle(wish) }) {
+                                IconButton(onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.toggle(wish)
+                                }) {
                                     Icon(
                                         if (wish.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                                         contentDescription = if (wish.checked) "Unmark as claimed" else "Mark as claimed",

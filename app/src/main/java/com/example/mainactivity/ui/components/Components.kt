@@ -696,6 +696,26 @@ fun SkeletonLoader(
     Box(modifier = modifier.clip(shape).background(brush))
 }
 
+/** Content-shaped loading placeholder for list screens — a column of shimmer cards.
+ *  Use instead of a bare spinner so the first paint resembles the eventual content. */
+@Composable
+fun ListSkeleton(
+    modifier: Modifier = Modifier,
+    rows: Int = 5,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(Spacing.screenEdge),
+        verticalArrangement = Arrangement.spacedBy(Spacing.cardGap),
+    ) {
+        repeat(rows) {
+            SkeletonLoader(
+                modifier = Modifier.fillMaxWidth().height(76.dp),
+                shape = RoundedCornerShape(Radius.card),
+            )
+        }
+    }
+}
+
 /** Destructive-action confirmation dialog with error-styled confirm button. */
 @Composable
 fun ConfirmationDialog(

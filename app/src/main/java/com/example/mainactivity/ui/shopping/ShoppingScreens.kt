@@ -71,6 +71,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -82,7 +84,7 @@ import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
 import com.example.mainactivity.ui.components.ListCard
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.PillTag
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
@@ -131,12 +133,16 @@ fun ShoppingScreen(
         },
     ) { padding ->
         if (isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                LoadingState()
-            }
+            ListSkeleton(Modifier.fillMaxSize().padding(padding))
         } else if (lists.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                EmptyState(Icons.Filled.ShoppingCart, "No lists yet", "Create a shared shopping list for your family.")
+                EmptyState(
+                    Icons.Filled.ShoppingCart,
+                    "No lists yet",
+                    "Create a shared shopping list for your family.",
+                    actionLabel = "New list",
+                    onAction = { showAdd = true },
+                )
             }
         } else {
             LazyColumn(
@@ -145,7 +151,11 @@ fun ShoppingScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(lists, key = { it.id }) { list ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteList(list) }, shape = RoundedCornerShape(20.dp)) {
+                    SwipeToRevealDelete(
+                        onDelete = { viewModel.deleteList(list) },
+                        modifier = Modifier.animateItem(),
+                        shape = RoundedCornerShape(20.dp),
+                    ) {
                         ListCard(onClick = { onOpenList(list.id) }) {
                             Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
                                 Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
@@ -290,7 +300,9 @@ fun ShoppingDetailScreen(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(sortedItems, key = { it.id }) { item -> ShoppingItemRow(item, viewModel) }
+                items(sortedItems, key = { it.id }) { item ->
+                    ShoppingItemRow(item, viewModel, Modifier.animateItem())
+                }
             }
         }
     }
@@ -324,10 +336,12 @@ fun ShoppingDetailScreen(
 private fun ShoppingItemRow(
     item: ShoppingItemModel,
     viewModel: ShoppingViewModel,
+    modifier: Modifier = Modifier,
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var editText by remember { mutableStateOf(item.item) }
     val focusRequester = remember { FocusRequester() }
+    val haptics = LocalHapticFeedback.current
 
     fun commitEdit() {
         if (!isEditing) return
@@ -344,14 +358,17 @@ private fun ShoppingItemRow(
         if (isEditing) focusRequester.requestFocus()
     }
 
-    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }, shape = RoundedCornerShape(16.dp)) {
+    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }, modifier = modifier, shape = RoundedCornerShape(16.dp)) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.toggle(item) }) {
+                IconButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.toggle(item)
+                }) {
                     Icon(
                         if (item.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                         null,

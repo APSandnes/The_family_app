@@ -69,7 +69,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.ListCard
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SectionHeader
 import com.example.mainactivity.ui.theme.Amber500
@@ -160,7 +160,7 @@ fun HomeScreen(
         }
 
         when {
-            state.isLoading -> item(span = { GridItemSpan(maxLineSpan) }) { LoadingState() }
+            state.isLoading -> item(span = { GridItemSpan(maxLineSpan) }) { ListSkeleton(rows = 3) }
             state.loadError ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     ErrorBanner(message = "Couldn't load your data. Pull to refresh.")

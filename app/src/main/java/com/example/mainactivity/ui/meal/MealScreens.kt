@@ -86,7 +86,7 @@ import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
 import com.example.mainactivity.ui.components.ListCard
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 import java.time.Instant
@@ -369,15 +369,15 @@ fun MealScreen(
         },
     ) { padding ->
         if (isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                LoadingState()
-            }
+            ListSkeleton(Modifier.fillMaxSize().padding(padding))
         } else if (plans.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 EmptyState(
                     Icons.Filled.Restaurant,
                     "No meal plans yet",
-                    "No meal plans yet. Start planning!",
+                    "Plan your family's meals for the week ahead.",
+                    actionLabel = "Create a meal plan",
+                    onAction = { showCreate = true },
                 )
             }
         } else {
@@ -399,6 +399,7 @@ fun MealScreen(
 
                     SwipeToRevealDelete(
                         onDelete = { viewModel.deletePlan(plan) },
+                        modifier = Modifier.animateItem(),
                         shape = RoundedCornerShape(20.dp),
                     ) {
                         ListCard(

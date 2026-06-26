@@ -49,7 +49,7 @@ import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.ListCard
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.PillTag
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
@@ -86,15 +86,15 @@ fun BirthdayScreen(
         },
     ) { padding ->
         if (isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                LoadingState()
-            }
+            ListSkeleton(Modifier.fillMaxSize().padding(padding))
         } else if (sorted.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 EmptyState(
                     Icons.Filled.Cake,
                     "No birthdays",
                     "Add family birthdays so you never miss a celebration.",
+                    actionLabel = "Add birthday",
+                    onAction = { showAdd = true },
                 )
             }
         } else {
@@ -104,7 +104,11 @@ fun BirthdayScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(sorted, key = { it.id }) { b ->
-                    SwipeToRevealDelete(onDelete = { viewModel.delete(b) }, shape = RoundedCornerShape(20.dp)) {
+                    SwipeToRevealDelete(
+                        onDelete = { viewModel.delete(b) },
+                        modifier = Modifier.animateItem(),
+                        shape = RoundedCornerShape(20.dp),
+                    ) {
                         BirthdayCard(b, today, onEdit = { editing = b })
                     }
                 }
