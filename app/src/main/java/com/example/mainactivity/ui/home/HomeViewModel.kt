@@ -93,20 +93,21 @@ class HomeViewModel
                     return
                 }
                 val family = user.familyId?.let { repo.getFamily(it) }
-                val db = SupabaseManager.client.postgrest
                 val familyId = user.familyId
-                val memberCount =
-                    if (familyId != null) {
+                var memberCount = 0
+                var summary = HomeSummary()
+                // Only touch the network when the user is actually in a family.
+                if (familyId != null) {
+                    val db = SupabaseManager.client.postgrest
+                    memberCount =
                         db
                             .from("users")
                             .select { filter { eq("family_id", familyId) } }
                             .decodeList<UserModel>()
                             .size
-                    } else {
-                        0
-                    }
-                // Summary is best-effort — a failure here must not blank the whole screen.
-                val summary = if (familyId != null) runCatching { loadSummary(db, familyId) }.getOrDefault(HomeSummary()) else HomeSummary()
+                    // Summary is best-effort — a failure here must not blank the whole screen.
+                    summary = runCatching { loadSummary(db, familyId) }.getOrDefault(HomeSummary())
+                }
 
                 _state.value =
                     HomeUiState(

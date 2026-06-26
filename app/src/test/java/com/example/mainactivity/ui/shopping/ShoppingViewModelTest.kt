@@ -107,7 +107,7 @@ class ShoppingViewModelTest {
             advanceUntilIdle()
 
             assertTrue("lists should be empty after sign-out", vm.lists.value.isEmpty())
-            assertTrue("itemCounts should be empty after sign-out", vm.itemCounts.value.isEmpty())
+            assertTrue("listProgress should be empty after sign-out", vm.listProgress.value.isEmpty())
         }
 
     // ──────────────────────────────────────────────────────────────

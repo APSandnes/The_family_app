@@ -1,5 +1,6 @@
 package com.example.mainactivity.ui.wishlist
 
+import android.content.Context
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.util.MainDispatcherRule
@@ -50,6 +51,9 @@ class WishlistViewModelTest {
     private lateinit var userId: MutableStateFlow<String?>
     private lateinit var familyChanged: MutableSharedFlow<Unit>
     private lateinit var vm: WishlistViewModel
+
+    // addWish only dereferences context when an image is attached (never in these tests).
+    private val ctx: Context = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -283,7 +287,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "New bicycle")
+            vm.addWish(ctx, "wl-1", "New bicycle")
             advanceUntilIdle()
 
             val items = vm.wishes.value
@@ -299,7 +303,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wishlist-99", "Lego set")
+            vm.addWish(ctx, "wishlist-99", "Lego set")
             advanceUntilIdle()
 
             assertEquals("wishlist-99", vm.wishes.value[0].wishlistId)
@@ -315,7 +319,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Delete me")
+            vm.addWish(ctx, "wl-1", "Delete me")
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
@@ -331,9 +335,9 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Keep me")
+            vm.addWish(ctx, "wl-1", "Keep me")
             advanceUntilIdle()
-            vm.addWish("wl-1", "Delete me")
+            vm.addWish(ctx, "wl-1", "Delete me")
             advanceUntilIdle()
 
             val toDelete = vm.wishes.value.first { it.text == "Delete me" }
@@ -354,7 +358,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Gift")
+            vm.addWish(ctx, "wl-1", "Gift")
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
@@ -373,7 +377,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Gift")
+            vm.addWish(ctx, "wl-1", "Gift")
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
