@@ -65,7 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.UserModel
-import com.example.mainactivity.ui.components.AppLargeTopBar
+import com.example.mainactivity.ui.components.AppTopBar
 import com.example.mainactivity.ui.components.CopyableCodeField
 import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.EmptyState
@@ -119,7 +119,7 @@ fun FamilyScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppLargeTopBar(
+            AppTopBar(
                 title = "Family",
                 actions = {
                     if (family != null) {

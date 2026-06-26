@@ -79,7 +79,7 @@ fun FeatureTopBar(
  *  Trailing [actions] host the avatar / notifications bell / search per D3. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppLargeTopBar(
+fun AppTopBar(
     title: String,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},

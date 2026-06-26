@@ -92,7 +92,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.CalendarEventModel
 import com.example.mainactivity.ui.components.AppFabSmall
-import com.example.mainactivity.ui.components.AppLargeTopBar
+import com.example.mainactivity.ui.components.AppTopBar
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.LoadingState
 import com.example.mainactivity.ui.components.RefreshOnResume
@@ -205,7 +205,7 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppLargeTopBar(
+            AppTopBar(
                 title = "Calendar",
                 actions = {
                     TextButton(onClick = { viewModel.selectDate(LocalDate.now()) }) {

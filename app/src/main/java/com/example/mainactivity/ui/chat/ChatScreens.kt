@@ -130,7 +130,7 @@ import com.example.mainactivity.ui.chat.components.ImageViewerDialog
 import com.example.mainactivity.ui.chat.components.ReactionChipsRow
 import com.example.mainactivity.ui.chat.components.ReactionPickerPopup
 import com.example.mainactivity.ui.chat.components.VoiceNoteMessage
-import com.example.mainactivity.ui.components.AppLargeTopBar
+import com.example.mainactivity.ui.components.AppTopBar
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InitialAvatar
@@ -166,7 +166,7 @@ fun ChatScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppLargeTopBar(title = "Chats")
+            AppTopBar(title = "Chats")
         },
         floatingActionButton = {
             FloatingActionButton(
