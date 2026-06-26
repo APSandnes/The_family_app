@@ -132,94 +132,110 @@ class HomeViewModel
             familyId: String,
         ): HomeSummary {
             val today = LocalDate.now()
-
-            // Tonight's meal: the plan whose range covers today, then today's day row.
-            val tonightMeal =
-                runCatching {
-                    val plans =
-                        db
-                            .from("meal_plans")
-                            .select { filter { eq("family_id", familyId) } }
-                            .decodeList<MealPlanModel>()
-                    val active =
-                        plans.firstOrNull {
-                            val f = runCatching { LocalDate.parse(it.fromDate) }.getOrNull()
-                            val t = runCatching { LocalDate.parse(it.toDate) }.getOrNull()
-                            f != null && t != null && !f.isAfter(today) && !t.isBefore(today)
-                        }
-                    active?.let { plan ->
-                        db
-                            .from("meal_plan_days")
-                            .select {
-                                filter {
-                                    eq("meal_plan_id", plan.id)
-                                    eq("date", today.toString())
-                                }
-                            }.decodeList<MealPlanDayModel>()
-                            .firstOrNull()
-                            ?.food
-                            ?.takeIf { it.isNotBlank() }
-                    }
-                }.getOrNull()
-
-            // Next upcoming event (ends today or later).
-            val event =
-                runCatching {
-                    db
-                        .from("calendar_events")
-                        .select { filter { eq("family_id", familyId) } }
-                        .decodeList<CalendarEventModel>()
-                        .filter {
-                            val end = runCatching { LocalDate.parse(it.dateTo.ifBlank { it.dateFrom }) }.getOrNull()
-                            end != null && !end.isBefore(today)
-                        }.minByOrNull { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
-                }.getOrNull()
-
-            // Soonest upcoming birthday.
-            val nextB =
-                runCatching {
-                    db
-                        .from("birthdays")
-                        .select { filter { eq("family_id", familyId) } }
-                        .decodeList<BirthdayModel>()
-                }.getOrNull()
-                    .orEmpty()
-                    .mapNotNull { b -> nextBirthdayDate(b.date, today)?.let { b to it } }
-                    .minByOrNull { it.second }
-
-            // Items left to buy across all family lists.
-            val remaining =
-                runCatching {
-                    val ids =
-                        db
-                            .from("shopping_lists")
-                            .select { filter { eq("family_id", familyId) } }
-                            .decodeList<ShoppingListModel>()
-                            .map { it.id }
-                    if (ids.isEmpty()) {
-                        0
-                    } else {
-                        db
-                            .from("shopping_items")
-                            .select {
-                                filter {
-                                    isIn("list_id", ids)
-                                    eq("checked", false)
-                                }
-                            }.decodeList<ShoppingItemModel>()
-                            .size
-                    }
-                }.getOrDefault(0)
-
+            val event = loadNextEvent(db, familyId, today)
+            val birthday = loadNextBirthday(db, familyId, today)
             return HomeSummary(
-                tonightMeal = tonightMeal,
+                tonightMeal = loadTonightMeal(db, familyId, today),
                 nextEventTitle = event?.activity,
                 nextEventWhen = event?.let { eventWhen(it, today) },
-                nextBirthdayName = nextB?.first?.name,
-                nextBirthdayWhen = nextB?.let { birthdayWhen(it.first, it.second, today) },
-                shoppingRemaining = remaining,
+                nextBirthdayName = birthday?.first?.name,
+                nextBirthdayWhen = birthday?.let { birthdayWhen(it.first, it.second, today) },
+                shoppingRemaining = loadShoppingRemaining(db, familyId),
             )
         }
+
+        /** Tonight's meal: the plan whose range covers today, then today's day row. */
+        private suspend fun loadTonightMeal(
+            db: Postgrest,
+            familyId: String,
+            today: LocalDate,
+        ): String? =
+            runCatching {
+                val plans =
+                    db
+                        .from("meal_plans")
+                        .select { filter { eq("family_id", familyId) } }
+                        .decodeList<MealPlanModel>()
+                val active =
+                    plans.firstOrNull {
+                        val f = runCatching { LocalDate.parse(it.fromDate) }.getOrNull()
+                        val t = runCatching { LocalDate.parse(it.toDate) }.getOrNull()
+                        f != null && t != null && !f.isAfter(today) && !t.isBefore(today)
+                    }
+                active?.let { plan ->
+                    db
+                        .from("meal_plan_days")
+                        .select {
+                            filter {
+                                eq("meal_plan_id", plan.id)
+                                eq("date", today.toString())
+                            }
+                        }.decodeList<MealPlanDayModel>()
+                        .firstOrNull()
+                        ?.food
+                        ?.takeIf { it.isNotBlank() }
+                }
+            }.getOrNull()
+
+        /** Next upcoming event (ends today or later). */
+        private suspend fun loadNextEvent(
+            db: Postgrest,
+            familyId: String,
+            today: LocalDate,
+        ): CalendarEventModel? =
+            runCatching {
+                db
+                    .from("calendar_events")
+                    .select { filter { eq("family_id", familyId) } }
+                    .decodeList<CalendarEventModel>()
+                    .filter {
+                        val end = runCatching { LocalDate.parse(it.dateTo.ifBlank { it.dateFrom }) }.getOrNull()
+                        end != null && !end.isBefore(today)
+                    }.minByOrNull { runCatching { LocalDate.parse(it.dateFrom) }.getOrNull() ?: LocalDate.MAX }
+            }.getOrNull()
+
+        /** Soonest upcoming birthday paired with its next occurrence date. */
+        private suspend fun loadNextBirthday(
+            db: Postgrest,
+            familyId: String,
+            today: LocalDate,
+        ): Pair<BirthdayModel, LocalDate>? =
+            runCatching {
+                db
+                    .from("birthdays")
+                    .select { filter { eq("family_id", familyId) } }
+                    .decodeList<BirthdayModel>()
+            }.getOrNull()
+                .orEmpty()
+                .mapNotNull { b -> nextBirthdayDate(b.date, today)?.let { b to it } }
+                .minByOrNull { it.second }
+
+        /** Items left to buy across all family lists. */
+        private suspend fun loadShoppingRemaining(
+            db: Postgrest,
+            familyId: String,
+        ): Int =
+            runCatching {
+                val ids =
+                    db
+                        .from("shopping_lists")
+                        .select { filter { eq("family_id", familyId) } }
+                        .decodeList<ShoppingListModel>()
+                        .map { it.id }
+                if (ids.isEmpty()) {
+                    0
+                } else {
+                    db
+                        .from("shopping_items")
+                        .select {
+                            filter {
+                                isIn("list_id", ids)
+                                eq("checked", false)
+                            }
+                        }.decodeList<ShoppingItemModel>()
+                        .size
+                }
+            }.getOrDefault(0)
     }
 
 private val EVENT_DATE_FMT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)

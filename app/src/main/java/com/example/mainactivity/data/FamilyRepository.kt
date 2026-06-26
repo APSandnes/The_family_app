@@ -328,38 +328,7 @@ class FamilyRepository
                 }
             val client = SupabaseManager.client
             runCatching {
-                // Find conversations where this user is the sole participant (should be deleted)
-                val myParticipantRows =
-                    client.postgrest
-                        .from("conversation_participants")
-                        .select { filter { eq("user_id", userId) } }
-                        .decodeList<ConversationParticipantModel>()
-
-                val myConversationIds = myParticipantRows.map { it.conversationId }
-                if (myConversationIds.isNotEmpty()) {
-                    val allRows =
-                        client.postgrest
-                            .from("conversation_participants")
-                            .select { filter { isIn("conversation_id", myConversationIds) } }
-                            .decodeList<ConversationParticipantModel>()
-
-                    val soloIds =
-                        allRows
-                            .groupBy { it.conversationId }
-                            .filter { (_, rows) -> rows.size == 1 }
-                            .keys
-                            .toList()
-
-                    if (soloIds.isNotEmpty()) {
-                        client.postgrest.from("conversations").delete {
-                            filter { isIn("id", soloIds) }
-                        }
-                    }
-                    // Remove user from all group conversations (participant rows)
-                    client.postgrest.from("conversation_participants").delete {
-                        filter { eq("user_id", userId) }
-                    }
-                }
+                cleanupConversationsForLeavingUser(userId)
 
                 // Delete user's calendar events in this family
                 client.postgrest.from("calendar_events").delete {
@@ -393,6 +362,35 @@ class FamilyRepository
                 invalidateUserCache()
                 _familyChanged.emit(Unit)
             }
+        }
+
+        /** Deletes conversations where the leaving user was the sole participant and
+         *  removes their participant rows from any group conversations. */
+        private suspend fun cleanupConversationsForLeavingUser(userId: String) {
+            val client = SupabaseManager.client
+            val myParticipantRows =
+                client.postgrest
+                    .from("conversation_participants")
+                    .select { filter { eq("user_id", userId) } }
+                    .decodeList<ConversationParticipantModel>()
+            val myConversationIds = myParticipantRows.map { it.conversationId }
+            if (myConversationIds.isEmpty()) return
+
+            val allRows =
+                client.postgrest
+                    .from("conversation_participants")
+                    .select { filter { isIn("conversation_id", myConversationIds) } }
+                    .decodeList<ConversationParticipantModel>()
+            val soloIds =
+                allRows
+                    .groupBy { it.conversationId }
+                    .filter { (_, rows) -> rows.size == 1 }
+                    .keys
+                    .toList()
+            if (soloIds.isNotEmpty()) {
+                client.postgrest.from("conversations").delete { filter { isIn("id", soloIds) } }
+            }
+            client.postgrest.from("conversation_participants").delete { filter { eq("user_id", userId) } }
         }
 
         suspend fun updateProfile(

@@ -130,21 +130,24 @@ class AuthViewModel
         }
     }
 
+// Ordered keyword → message table. The first entry whose keywords appear in the raw
+// error message wins. Keeps friendlyAuthError simple (data-driven, not a giant when).
+private val AUTH_ERROR_MESSAGES: List<Pair<List<String>, String>> =
+    listOf(
+        listOf("invalid login credentials", "invalid_credentials") to "Incorrect email or password.",
+        listOf("user already registered", "already been registered") to "An account with this email already exists.",
+        listOf("email address is invalid") to "Please enter a valid email address.",
+        listOf("password should be at least", "weak_password") to "Password must be at least 6 characters.",
+        listOf("rate limit", "too many requests") to "Too many attempts. Please wait a moment and try again.",
+        listOf("network", "unable to resolve", "connect") to "Network error. Please check your connection.",
+    )
+
 private fun friendlyAuthError(
     e: Throwable,
     isLogin: Boolean,
 ): String {
     val raw = e.message?.lowercase() ?: return "Something went wrong. Please try again."
-    return when {
-        "invalid login credentials" in raw || "invalid_credentials" in raw -> "Incorrect email or password."
-        "user already registered" in raw || "already been registered" in raw ->
-            "An account with this email already exists."
-        "email address is invalid" in raw -> "Please enter a valid email address."
-        "password should be at least" in raw || "weak_password" in raw -> "Password must be at least 6 characters."
-        "redirect" in raw && "not allowed" in raw -> "Something went wrong. Please try again."
-        "rate limit" in raw || "too many requests" in raw -> "Too many attempts. Please wait a moment and try again."
-        "network" in raw || "unable to resolve" in raw || "connect" in raw ->
-            "Network error. Please check your connection."
-        else -> if (isLogin) "Sign in failed. Please try again." else "Registration failed. Please try again."
-    }
+    if ("redirect" in raw && "not allowed" in raw) return "Something went wrong. Please try again."
+    AUTH_ERROR_MESSAGES.firstOrNull { (keywords, _) -> keywords.any { it in raw } }?.let { return it.second }
+    return if (isLogin) "Sign in failed. Please try again." else "Registration failed. Please try again."
 }

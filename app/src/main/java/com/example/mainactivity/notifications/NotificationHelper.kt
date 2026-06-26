@@ -86,49 +86,13 @@ object NotificationHelper {
                     ),
                 )
 
-        val remoteInput =
-            RemoteInput
-                .Builder(KEY_TEXT_REPLY)
-                .setLabel("Reply")
-                .build()
-
-        val replyIntent =
-            PendingIntent.getBroadcast(
-                context,
-                conversation.id.hashCode(),
-                Intent(context, ReplyReceiver::class.java).apply {
-                    putExtra("conversation_id", conversation.id)
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-            )
-
-        val replyAction =
-            NotificationCompat.Action
-                .Builder(
-                    android.R.drawable.ic_menu_send,
-                    "Reply",
-                    replyIntent,
-                ).addRemoteInput(remoteInput)
-                .build()
-
-        val openIntent =
-            PendingIntent.getActivity(
-                context,
-                conversation.id.hashCode() + 1,
-                Intent(context, MainActivity::class.java).apply {
-                    data = android.net.Uri.parse("familyapp://chat/${conversation.id}")
-                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
         val notification =
             NotificationCompat
                 .Builder(context, CHANNEL_MESSAGES)
                 .setSmallIcon(android.R.drawable.ic_dialog_email)
                 .setStyle(messagingStyle)
-                .addAction(replyAction)
-                .setContentIntent(openIntent)
+                .addAction(buildReplyAction(context, conversation))
+                .setContentIntent(buildOpenIntent(context, conversation))
                 .setAutoCancel(true)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -143,6 +107,40 @@ object NotificationHelper {
             }
         }
     }
+
+    private fun buildReplyAction(
+        context: Context,
+        conversation: ConversationModel,
+    ): NotificationCompat.Action {
+        val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY).setLabel("Reply").build()
+        val replyIntent =
+            PendingIntent.getBroadcast(
+                context,
+                conversation.id.hashCode(),
+                Intent(context, ReplyReceiver::class.java).apply {
+                    putExtra("conversation_id", conversation.id)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
+        return NotificationCompat.Action
+            .Builder(android.R.drawable.ic_menu_send, "Reply", replyIntent)
+            .addRemoteInput(remoteInput)
+            .build()
+    }
+
+    private fun buildOpenIntent(
+        context: Context,
+        conversation: ConversationModel,
+    ): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            conversation.id.hashCode() + 1,
+            Intent(context, MainActivity::class.java).apply {
+                data = android.net.Uri.parse("familyapp://chat/${conversation.id}")
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     private fun createInitialBitmap(name: String): Bitmap {
         val size = AVATAR_BITMAP_SIZE

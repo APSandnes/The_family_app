@@ -183,85 +183,83 @@ class ChatViewModel
             _isLoading.value = true
             runCatching {
                 val user = repo.getUser(userId)
-
                 if (user?.familyId != null) {
                     val members = repo.getFamilyMembers(user.familyId)
                     _familyMembers.value = members
                     _userProfiles.value = members.associateBy { it.id }
                 }
 
-                val convs =
-                    db
-                        .from("conversations")
-                        .select()
-                        .decodeList<ConversationModel>()
-
+                val convs = db.from("conversations").select().decodeList<ConversationModel>()
                 if (convs.isEmpty()) {
                     _conversations.value = emptyList()
                     _conversationParticipants.value = emptyMap()
                     return@runCatching
                 }
 
-                val conversationIds = convs.map { it.id }
-
-                val allRows =
-                    runCatching {
-                        db
-                            .from("conversation_participants")
-                            .select { filter { isIn("conversation_id", conversationIds) } }
-                            .decodeList<ConversationParticipantModel>()
-                    }.getOrDefault(emptyList())
-
-                val knownIds = _userProfiles.value.keys
-                val missingIds = allRows.map { it.userId }.distinct().filter { it !in knownIds }
-                if (missingIds.isNotEmpty()) {
-                    val fresh =
-                        db
-                            .from("users")
-                            .select { filter { isIn("id", missingIds) } }
-                            .decodeList<UserModel>()
-                    _userProfiles.update { it + fresh.associateBy { u -> u.id } }
-                }
-
-                val participantsMap =
-                    allRows
-                        .groupBy { it.conversationId }
-                        .mapValues { (_, rows) -> rows.mapNotNull { _userProfiles.value[it.userId] } }
+                val participantsMap = loadParticipantsMap(convs.map { it.id })
                 _conversationParticipants.value = participantsMap
-
-                // Fetch last message for each conversation in parallel
-                val previews =
-                    coroutineScope {
-                        convs
-                            .map { conv ->
-                                async {
-                                    val lastMsg = repo.getLastMessage(conv.id)
-                                    val lastSenderName =
-                                        when {
-                                            lastMsg == null -> null
-                                            lastMsg.userFrom == userId -> "You"
-                                            else ->
-                                                _userProfiles.value[lastMsg.userFrom]?.name
-                                                    ?: lastMsg.userFrom.take(USER_ID_PREVIEW_LENGTH)
-                                        }
-                                    ConversationWithPreview(
-                                        conversation = conv,
-                                        lastMessage = lastMsg,
-                                        lastSenderName = lastSenderName,
-                                        unreadCount = 0,
-                                        participants = participantsMap[conv.id] ?: emptyList(),
-                                    )
-                                }
-                            }.awaitAll()
-                    }
-
-                _conversations.value = previews
-
-                // Subscribe to all conversations for notifications
+                _conversations.value = buildConversationPreviews(convs, userId, participantsMap)
                 subscribeAllForNotifications(userId)
             }
             _isLoading.value = false
         }
+
+        /** Loads participant rows for the given conversations, fetching any unknown user
+         *  profiles, and returns conversationId → participant profiles. */
+        private suspend fun loadParticipantsMap(conversationIds: List<String>): Map<String, List<UserModel>> {
+            val allRows =
+                runCatching {
+                    db
+                        .from("conversation_participants")
+                        .select { filter { isIn("conversation_id", conversationIds) } }
+                        .decodeList<ConversationParticipantModel>()
+                }.getOrDefault(emptyList())
+
+            val knownIds = _userProfiles.value.keys
+            val missingIds = allRows.map { it.userId }.distinct().filter { it !in knownIds }
+            if (missingIds.isNotEmpty()) {
+                val fresh =
+                    db
+                        .from("users")
+                        .select { filter { isIn("id", missingIds) } }
+                        .decodeList<UserModel>()
+                _userProfiles.update { it + fresh.associateBy { u -> u.id } }
+            }
+
+            return allRows
+                .groupBy { it.conversationId }
+                .mapValues { (_, rows) -> rows.mapNotNull { _userProfiles.value[it.userId] } }
+        }
+
+        /** Builds list previews (last message + sender label) for each conversation in parallel. */
+        private suspend fun buildConversationPreviews(
+            convs: List<ConversationModel>,
+            userId: String,
+            participantsMap: Map<String, List<UserModel>>,
+        ): List<ConversationWithPreview> =
+            coroutineScope {
+                convs
+                    .map { conv ->
+                        async {
+                            val lastMsg = repo.getLastMessage(conv.id)
+                            val lastSenderName =
+                                when {
+                                    lastMsg == null -> null
+                                    lastMsg.userFrom == userId -> "You"
+                                    else ->
+                                        _userProfiles.value[lastMsg.userFrom]?.name
+                                            ?: lastMsg.userFrom.take(USER_ID_PREVIEW_LENGTH)
+                                }
+                            ConversationWithPreview(
+                                conversation = conv,
+                                lastMessage = lastMsg,
+                                lastSenderName = lastSenderName,
+                                unreadCount = 0,
+                                participants = participantsMap[conv.id] ?: emptyList(),
+                            )
+                        }
+                    }.awaitAll()
+            }
 
         private suspend fun subscribeAllForNotifications(userId: String) {
             val notifEnabled = repo.notificationsEnabled.first()
