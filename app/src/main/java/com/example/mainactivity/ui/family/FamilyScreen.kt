@@ -60,12 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.data.UserModel
+import com.example.mainactivity.ui.components.AppLargeTopBar
 import com.example.mainactivity.ui.components.CopyableCodeField
 import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
-import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InitialAvatar
 import com.example.mainactivity.ui.components.InputDialog
 import com.example.mainactivity.ui.components.PillTag
@@ -75,7 +75,6 @@ import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
 @Composable
 fun FamilyScreen(
-    onBack: (() -> Unit)? = null,
     viewModel: FamilyViewModel = hiltViewModel(),
 ) {
     val family by viewModel.family.collectAsStateWithLifecycle()
@@ -101,9 +100,8 @@ fun FamilyScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            FeatureTopBar(
+            AppLargeTopBar(
                 title = "Family",
-                onBack = onBack,
                 actions = {
                     if (family != null) {
                         Box {

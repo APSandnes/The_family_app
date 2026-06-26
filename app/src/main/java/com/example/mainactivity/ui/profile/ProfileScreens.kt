@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.example.mainactivity.ui.components.BirthdayPickerField
+import com.example.mainactivity.ui.components.AppLargeTopBar
 import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
@@ -106,7 +107,7 @@ fun ProfileScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { FeatureTopBar("Profile") },
+        topBar = { AppLargeTopBar("Profile") },
     ) { padding ->
         Column(
             Modifier
