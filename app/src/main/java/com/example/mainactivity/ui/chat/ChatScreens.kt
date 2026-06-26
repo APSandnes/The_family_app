@@ -744,7 +744,7 @@ fun ConversationScreen(
                                         )
                                     }
                                     IconButton(onClick = {
-                                        val captureDir = java.io.File(context.cacheDir, "chat_captures").also { it.mkdirs() }
+                                        val captureDir = java.io.File(context.cacheDir, "camera_captures").also { it.mkdirs() }
                                         val file = java.io.File(captureDir, "chat_${System.currentTimeMillis()}.jpg")
                                         msgCameraFile = file
                                         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
