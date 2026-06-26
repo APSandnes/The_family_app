@@ -379,7 +379,10 @@ private fun FeatureTile(
         tonalElevation = 1.dp,
         shadowElevation = 2.dp,
     ) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.padding(14.dp).fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
             Box(
                 Modifier
                     .size(44.dp)
