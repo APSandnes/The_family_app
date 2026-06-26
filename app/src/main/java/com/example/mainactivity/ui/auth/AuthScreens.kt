@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -276,12 +277,17 @@ private fun StepIndicator(
                     modifier =
                         Modifier
                             .size(30.dp)
+                            .border(
+                                width = if (isActive || isCompleted) 0.dp else 1.5.dp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                shape = CircleShape,
+                            )
                             .clip(CircleShape)
                             .background(
                                 if (isActive || isCompleted) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
+                                    Color.Transparent
                                 },
                             ),
                     contentAlignment = Alignment.Center,
