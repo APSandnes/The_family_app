@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.data.UserModel
 import com.example.mainactivity.ui.components.CopyableCodeField
+import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
@@ -253,7 +254,7 @@ fun FamilyScreen(
                 // Leave button
                 item {
                     Spacer(Modifier.height(8.dp))
-                    SecondaryButton(
+                    DestructiveButton(
                         text = "Leave family",
                         onClick = { showLeaveConfirm = true },
                         modifier = Modifier.fillMaxWidth(),

@@ -47,7 +47,6 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,8 +72,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
+import com.example.mainactivity.ui.components.ListCard
 import com.example.mainactivity.ui.components.LoadingState
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
@@ -123,14 +124,7 @@ fun WishlistScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Wishlists", onBack) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAdd = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("New wishlist") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.semantics { contentDescription = "Create new wishlist" },
-            )
+            AppFab(text = "New wishlist", icon = Icons.Filled.Add, onClick = { showAdd = true })
         },
     ) { padding ->
         when {
@@ -156,46 +150,38 @@ fun WishlistScreen(
                 ) {
                     items(wishlists, key = { it.id }) { wl ->
                         SwipeToRevealDelete(onDelete = { viewModel.deleteWishlist(wl) }, shape = RoundedCornerShape(20.dp)) {
-                            Surface(
-                                onClick = { onOpen(wl.id) },
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                shadowElevation = 2.dp,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    // Large icon in colored circle
-                                    Box(
-                                        Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            wishlistIconVector(wl.icon),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(28.dp),
-                                        )
-                                    }
-                                    Spacer(Modifier.width(14.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            wl.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                        )
-                                        if (wl.ownerName.isNotEmpty()) {
-                                            Text(
-                                                "By ${wl.ownerName}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                    }
-                                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            ListCard(onClick = { onOpen(wl.id) }) {
+                                // Large icon in colored circle
+                                Box(
+                                    Modifier
+                                        .size(52.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        wishlistIconVector(wl.icon),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(28.dp),
+                                    )
                                 }
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        wl.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    if (wl.ownerName.isNotEmpty()) {
+                                        Text(
+                                            "By ${wl.ownerName}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

@@ -47,7 +47,6 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,9 +77,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.data.ShoppingItemModel
+import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
+import com.example.mainactivity.ui.components.ListCard
 import com.example.mainactivity.ui.components.LoadingState
 import com.example.mainactivity.ui.components.PillTag
 import com.example.mainactivity.ui.components.RefreshOnResume
@@ -126,13 +127,7 @@ fun ShoppingScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Shopping lists", onBack) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAdd = true },
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text("New list") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            )
+            AppFab(text = "New list", icon = Icons.Filled.Add, onClick = { showAdd = true })
         },
     ) { padding ->
         if (isLoading) {
@@ -151,24 +146,13 @@ fun ShoppingScreen(
             ) {
                 items(lists, key = { it.id }) { list ->
                     SwipeToRevealDelete(onDelete = { viewModel.deleteList(list) }, shape = RoundedCornerShape(20.dp)) {
-                        Surface(
-                            onClick = { onOpenList(list.id) },
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            shadowElevation = 2.dp,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    Modifier.size(44.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(Modifier.size(8.dp))
-                                Text(list.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ListCard(onClick = { onOpenList(list.id) }) {
+                            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                                Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
                             }
+                            Spacer(Modifier.size(8.dp))
+                            Text(list.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

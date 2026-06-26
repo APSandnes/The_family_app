@@ -58,7 +58,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -90,6 +89,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.data.CalendarEventModel
+import com.example.mainactivity.ui.components.AppFabSmall
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.LoadingState
@@ -207,12 +207,11 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            AppFabSmall(
+                icon = Icons.Filled.Add,
+                contentDescription = "Add new calendar event",
                 onClick = { showAdd = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(Icons.Filled.Add, "Add new calendar event", tint = MaterialTheme.colorScheme.onPrimary)
-            }
+            )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {

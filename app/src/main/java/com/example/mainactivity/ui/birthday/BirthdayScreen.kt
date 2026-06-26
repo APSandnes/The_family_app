@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,10 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mainactivity.data.BirthdayModel
+import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.BirthdayPickerField
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
+import com.example.mainactivity.ui.components.ListCard
 import com.example.mainactivity.ui.components.LoadingState
 import com.example.mainactivity.ui.components.PillTag
 import com.example.mainactivity.ui.components.RefreshOnResume
@@ -82,14 +82,7 @@ fun BirthdayScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Birthdays", onBack) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAdd = true },
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("Add birthday") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.semantics { contentDescription = "Add birthday" },
-            )
+            AppFab(text = "Add birthday", icon = Icons.Filled.Add, onClick = { showAdd = true })
         },
     ) { padding ->
         if (isLoading) {
@@ -111,7 +104,7 @@ fun BirthdayScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(sorted, key = { it.id }) { b ->
-                    SwipeToRevealDelete(onDelete = { viewModel.delete(b) }, shape = RoundedCornerShape(16.dp)) {
+                    SwipeToRevealDelete(onDelete = { viewModel.delete(b) }, shape = RoundedCornerShape(20.dp)) {
                         BirthdayCard(b, today, onEdit = { editing = b })
                     }
                 }
@@ -168,78 +161,70 @@ private fun BirthdayCard(
     val cardDescription =
         "${b.name}'s birthday, $displayDate${if (daysLabel.isNotEmpty()) ", $daysLabel" else ""}"
 
-    Surface(
+    ListCard(
         onClick = onEdit,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = cardDescription },
+        modifier = Modifier.semantics { contentDescription = cardDescription },
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Filled.Cake,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            Spacer(Modifier.size(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    b.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    displayDate,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (age != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                        Text(
-                            "Turning $age",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        )
-                    }
+        Box(
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Cake,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Spacer(Modifier.size(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                b.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                displayDate,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (age != null) {
+                Spacer(Modifier.height(4.dp))
+                Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
+                    Text(
+                        "Turning $age",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
                 }
             }
-            if (daysUntil != null) {
-                Spacer(Modifier.size(8.dp))
-                when {
-                    daysUntil == 0 ->
-                        PillTag(
-                            text = "Today!",
-                            container = Color(0xFF22C55E),
-                            content = Color.White,
-                        )
-                    daysUntil <= 7 ->
-                        PillTag(
-                            text = "In $daysUntil days",
-                            container = Color(0xFFF59E0B).copy(alpha = 0.18f),
-                            content = Color(0xFFB45309),
-                        )
-                    else ->
-                        PillTag(
-                            text = "In $daysUntil days",
-                            container = MaterialTheme.colorScheme.surfaceVariant,
-                            content = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                }
+        }
+        if (daysUntil != null) {
+            Spacer(Modifier.size(8.dp))
+            when {
+                daysUntil == 0 ->
+                    PillTag(
+                        text = "Today!",
+                        container = Color(0xFF22C55E),
+                        content = Color.White,
+                    )
+                daysUntil <= 7 ->
+                    PillTag(
+                        text = "In $daysUntil days",
+                        container = Color(0xFFF59E0B).copy(alpha = 0.18f),
+                        content = Color(0xFFB45309),
+                    )
+                else ->
+                    PillTag(
+                        text = "In $daysUntil days",
+                        container = MaterialTheme.colorScheme.surfaceVariant,
+                        content = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
             }
         }
     }

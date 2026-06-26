@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.example.mainactivity.ui.components.BirthdayPickerField
+import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
@@ -192,7 +193,7 @@ fun ProfileScreen(
             ActionRow(Icons.Filled.Edit, "Edit profile", onEdit)
             ActionRow(Icons.Filled.Settings, "Settings", onSettings)
             Spacer(Modifier.height(4.dp))
-            PrimaryButton(
+            DestructiveButton(
                 "Sign out",
                 onClick = { viewModel.signOut(onSignedOut) },
                 modifier = Modifier.fillMaxWidth(),
