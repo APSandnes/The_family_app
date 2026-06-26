@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flight
@@ -47,7 +49,6 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -72,17 +73,22 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mainactivity.data.ShoppingItemModel
+import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListCard
+import com.example.mainactivity.ui.components.ListSkeleton
 import com.example.mainactivity.ui.components.PillTag
+import com.example.mainactivity.ui.components.PullRefresh
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 
@@ -110,6 +116,13 @@ private val SHOPPING_ICON_OPTIONS =
 private fun shoppingIconVector(key: String): ImageVector =
     SHOPPING_ICON_OPTIONS.firstOrNull { it.key == key }?.vector ?: Icons.Filled.ShoppingCart
 
+private fun shoppingProgressLabel(p: ListProgress?): String =
+    when {
+        p == null || p.total == 0 -> "No items yet"
+        p.bought == p.total -> "All bought"
+        else -> "${p.bought} of ${p.total} bought"
+    }
+
 @Composable
 fun ShoppingScreen(
     onBack: () -> Unit,
@@ -118,6 +131,7 @@ fun ShoppingScreen(
 ) {
     val lists by viewModel.lists.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
+    val progress by viewModel.listProgress.collectAsStateWithLifecycle(emptyMap())
     var showAdd by remember { mutableStateOf(false) }
 
     RefreshOnResume { viewModel.refresh() }
@@ -126,47 +140,50 @@ fun ShoppingScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Shopping lists", onBack) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAdd = true },
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text("New list") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            )
+            AppFab(text = "New list", icon = Icons.Filled.Add, onClick = { showAdd = true })
         },
     ) { padding ->
-        if (isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                LoadingState()
-            }
-        } else if (lists.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                EmptyState(Icons.Filled.ShoppingCart, "No lists yet", "Create a shared shopping list for your family.")
-            }
-        } else {
-            LazyColumn(
-                Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(lists, key = { it.id }) { list ->
-                    SwipeToRevealDelete(onDelete = { viewModel.deleteList(list) }, shape = RoundedCornerShape(20.dp)) {
-                        Surface(
-                            onClick = { onOpenList(list.id) },
+        PullRefresh(
+            onRefresh = { viewModel.refresh().join() },
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            if (isLoading) {
+                ListSkeleton(Modifier.fillMaxSize())
+            } else if (lists.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    EmptyState(
+                        Icons.Filled.ShoppingCart,
+                        "No lists yet",
+                        "Create a shared shopping list for your family.",
+                        actionLabel = "New list",
+                        onAction = { showAdd = true },
+                    )
+                }
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(lists, key = { it.id }) { list ->
+                        SwipeToRevealDelete(
+                            onDelete = { viewModel.deleteList(list) },
+                            modifier = Modifier.animateItem(),
                             shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            shadowElevation = 2.dp,
-                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    Modifier.size(44.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
+                            ListCard(onClick = { onOpenList(list.id) }) {
+                                Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
                                     Icon(shoppingIconVector(list.icon), null, tint = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(Modifier.size(8.dp))
-                                Text(list.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Column(Modifier.weight(1f)) {
+                                    Text(list.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        shoppingProgressLabel(progress[list.id]),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                                 Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -201,10 +218,12 @@ fun ShoppingDetailScreen(
     var showRename by remember { mutableStateOf(false) }
     var showChangeIcon by remember { mutableStateOf(false) }
     val remaining = items.count { !it.checked }
-    val sortedItems = remember(items) { items.sortedWith(compareBy { it.checked }) }
+    val active = remember(items) { items.filter { !it.checked } }
+    val completed = remember(items) { items.filter { it.checked } }
+    var showCompleted by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
-    LaunchedEffect(sortedItems.size) {
-        if (sortedItems.isNotEmpty()) listState.animateScrollToItem(sortedItems.lastIndex)
+    LaunchedEffect(active.size) {
+        if (active.isNotEmpty()) listState.animateScrollToItem(active.size - 1)
     }
 
     fun addItem() {
@@ -273,12 +292,13 @@ fun ShoppingDetailScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { addItem() }),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                     Spacer(Modifier.width(8.dp))
                     IconButton(
@@ -306,7 +326,24 @@ fun ShoppingDetailScreen(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(sortedItems, key = { it.id }) { item -> ShoppingItemRow(item, viewModel) }
+                items(active, key = { it.id }) { item ->
+                    ShoppingItemRow(item, viewModel, Modifier.animateItem())
+                }
+                if (completed.isNotEmpty()) {
+                    item(key = "completed-header") {
+                        CompletedHeader(
+                            count = completed.size,
+                            expanded = showCompleted,
+                            onToggle = { showCompleted = !showCompleted },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                    if (showCompleted) {
+                        items(completed, key = { it.id }) { item ->
+                            ShoppingItemRow(item, viewModel, Modifier.animateItem())
+                        }
+                    }
+                }
             }
         }
     }
@@ -340,10 +377,12 @@ fun ShoppingDetailScreen(
 private fun ShoppingItemRow(
     item: ShoppingItemModel,
     viewModel: ShoppingViewModel,
+    modifier: Modifier = Modifier,
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var editText by remember { mutableStateOf(item.item) }
     val focusRequester = remember { FocusRequester() }
+    val haptics = LocalHapticFeedback.current
 
     fun commitEdit() {
         if (!isEditing) return
@@ -360,14 +399,17 @@ private fun ShoppingItemRow(
         if (isEditing) focusRequester.requestFocus()
     }
 
-    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }, shape = RoundedCornerShape(16.dp)) {
+    SwipeToRevealDelete(onDelete = { viewModel.deleteItem(item) }, modifier = modifier, shape = RoundedCornerShape(16.dp)) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.toggle(item) }) {
+                IconButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.toggle(item)
+                }) {
                     Icon(
                         if (item.checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
                         null,
@@ -410,6 +452,36 @@ private fun ShoppingItemRow(
 }
 
 @Composable
+private fun CompletedHeader(
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onToggle)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Completed ($count)",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = if (expanded) "Hide completed items" else "Show completed items",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun NewListDialog(
     onDismiss: () -> Unit,
     onConfirm: (title: String, icon: String) -> Unit,
@@ -448,12 +520,13 @@ private fun NewListDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                 }
                 AnimatedVisibility(visible = showIconPicker) {

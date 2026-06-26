@@ -35,7 +35,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class HomeViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -175,14 +174,14 @@ class HomeViewModelTest {
             coEvery { repo.getUser("u1") } returns user
 
             vm.state.test {
-                val initial = awaitItem()
-                assertTrue("First emission should be loading", initial.isLoading)
-                assertNull("First emission should have no user", initial.user)
+                // Drain initial emission(s) before a user is set; the init collector may
+                // process the starting null userId before/after turbine subscribes.
+                awaitItem()
 
                 userId.value = "u1"
                 advanceUntilIdle()
 
-                val loaded = awaitItem()
+                val loaded = expectMostRecentItem()
                 assertFalse("Loaded state should not be loading", loaded.isLoading)
                 assertFalse("Loaded state should have no error", loaded.loadError)
                 assertEquals("Loaded state should have user", user, loaded.user)
@@ -205,11 +204,21 @@ class HomeViewModelTest {
 
             userId.value = "u1"
             advanceUntilIdle()
-            assertEquals("First user should be Alice", "u1", vm.state.value.user?.id)
+            assertEquals(
+                "First user should be Alice",
+                "u1",
+                vm.state.value.user
+                    ?.id,
+            )
 
             userId.value = "u2"
             advanceUntilIdle()
-            assertEquals("Second user should be Bob", "u2", vm.state.value.user?.id)
+            assertEquals(
+                "Second user should be Bob",
+                "u2",
+                vm.state.value.user
+                    ?.id,
+            )
         }
 
     // -------------------------------------------------------------------------
@@ -227,7 +236,7 @@ class HomeViewModelTest {
                 userId.value = "u1"
                 advanceUntilIdle()
 
-                val errorState = awaitItem()
+                val errorState = expectMostRecentItem()
                 assertTrue("loadError should be true", errorState.loadError)
                 assertFalse("Should not be loading", errorState.isLoading)
                 assertNull("User should be null", errorState.user)

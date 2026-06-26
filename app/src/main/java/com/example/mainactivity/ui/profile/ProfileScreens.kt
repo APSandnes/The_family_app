@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,11 +53,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.example.mainactivity.ui.components.AppTopBar
 import com.example.mainactivity.ui.components.BirthdayPickerField
+import com.example.mainactivity.ui.components.DestructiveButton
 import com.example.mainactivity.ui.components.ErrorBanner
 import com.example.mainactivity.ui.components.FamilyTextField
 import com.example.mainactivity.ui.components.FeatureTopBar
@@ -91,7 +96,7 @@ fun ProfileScreen(
     val cameraLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.TakePicture(),
-        ) { success -> viewModel.onCameraResult(context, success) }
+        ) { success -> viewModel.onCameraResult(success) }
 
     val cameraPermissionLauncher =
         rememberLauncherForActivityResult(
@@ -102,7 +107,7 @@ fun ProfileScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { FeatureTopBar("Profile") },
+        topBar = { AppTopBar("Profile") },
     ) { padding ->
         Column(
             Modifier
@@ -123,7 +128,9 @@ fun ProfileScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Avatar circle — clickable to change photo (disabled during upload)
                     Box(
-                        Modifier.size(72.dp).clip(CircleShape)
+                        Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
                             .clickable(enabled = !isUploading) { showAvatarPicker = true },
                     ) {
                         val avatarUri = user?.avatarUrl
@@ -192,7 +199,7 @@ fun ProfileScreen(
             ActionRow(Icons.Filled.Edit, "Edit profile", onEdit)
             ActionRow(Icons.Filled.Settings, "Settings", onSettings)
             Spacer(Modifier.height(4.dp))
-            PrimaryButton(
+            DestructiveButton(
                 "Sign out",
                 onClick = { viewModel.signOut(onSignedOut) },
                 modifier = Modifier.fillMaxWidth(),
@@ -262,8 +269,17 @@ private fun InfoRow(
     Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.size(14.dp))
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(16.dp))
+        Text(
+            value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

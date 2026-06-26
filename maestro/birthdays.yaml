@@ -1,0 +1,36 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - birthdays
+---
+# Birthdays: add a birthday (name + date picker), then delete it.
+- launchApp:
+    appId: com.example.mainactivity
+- assertVisible: "Quick access"
+- scrollUntilVisible:
+    element: "Birthdays"
+    direction: DOWN
+- tapOn: "Birthdays"
+- assertVisible: "Add birthday"
+
+- tapOn: "Add birthday"
+- tapOn: "Name"
+- inputText: "Maestro Bday"
+- hideKeyboard
+# Open the date field (no stable text) and pick a day, then confirm.
+- tapOn:
+    point: "50%,51%"
+- assertVisible: "Select date"
+- tapOn:
+    point: "25%,55%" # a day cell
+- tapOn: "OK"
+- tapOn: "Add"
+- assertVisible: "Maestro Bday"
+
+# Swipe-to-delete (newly added birthday sorts to the top)
+- swipe:
+    start: "85%,20%"
+    end: "12%,20%"
+- tapOn:
+    point: "85%,20%"
+- assertNotVisible: "Maestro Bday"

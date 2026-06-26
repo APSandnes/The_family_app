@@ -22,23 +22,25 @@ sealed interface AuthGate {
 }
 
 @HiltViewModel
-class RootViewModel @Inject constructor(
-    internal val repo: FamilyRepository,
-) : ViewModel() {
-    val gate: StateFlow<AuthGate> =
-        combine(
-            repo.currentUserId,
-            repo.permissionsRequested,
-        ) { userId, permsDone ->
-            when {
-                userId == null -> AuthGate.SignedOut
-                !permsDone -> AuthGate.NeedsPermissions
-                else -> AuthGate.SignedIn
-            }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AuthGate.Loading)
+class RootViewModel
+    @Inject
+    constructor(
+        internal val repo: FamilyRepository,
+    ) : ViewModel() {
+        val gate: StateFlow<AuthGate> =
+            combine(
+                repo.currentUserId,
+                repo.permissionsRequested,
+            ) { userId, permsDone ->
+                when {
+                    userId == null -> AuthGate.SignedOut
+                    !permsDone -> AuthGate.NeedsPermissions
+                    else -> AuthGate.SignedIn
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AuthGate.Loading)
 
-    fun completePermissionsOnboarding() =
-        viewModelScope.launch {
-            repo.setPermissionsRequested()
-        }
-}
+        fun completePermissionsOnboarding() =
+            viewModelScope.launch {
+                repo.setPermissionsRequested()
+            }
+    }

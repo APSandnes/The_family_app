@@ -1,0 +1,15 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - map
+---
+# Family Map: opens and shows the "On the map" roster.
+- launchApp:
+    appId: com.example.mainactivity
+- assertVisible: "Quick access"
+- scrollUntilVisible:
+    element: "See where everyone is"
+    direction: DOWN
+- tapOn: "See where everyone is"
+- assertVisible: "Family Map"
+- assertVisible: "On the map"

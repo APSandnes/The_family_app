@@ -45,7 +45,6 @@ import java.time.YearMonth
  */
 @RunWith(JUnit4::class)
 class CalendarViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -164,13 +163,14 @@ class CalendarViewModelTest {
     fun `eventsForSelectedDate returns event whose date range covers selected date`() =
         runTest(dispatcherRule.dispatcher) {
             val today = LocalDate.now()
-            val event = CalendarEventModel(
-                id = "e1",
-                userId = "u1",
-                dateFrom = today.toString(),
-                dateTo = today.toString(),
-                activity = "Daily standup",
-            )
+            val event =
+                CalendarEventModel(
+                    id = "e1",
+                    userId = "u1",
+                    dateFrom = today.toString(),
+                    dateTo = today.toString(),
+                    activity = "Daily standup",
+                )
             seedEvents(event)
             vm.selectDate(today)
 
@@ -188,13 +188,14 @@ class CalendarViewModelTest {
         runTest(dispatcherRule.dispatcher) {
             val today = LocalDate.now()
             val yesterday = today.minusDays(1)
-            val event = CalendarEventModel(
-                id = "e2",
-                userId = "u1",
-                dateFrom = yesterday.toString(),
-                dateTo = yesterday.toString(),
-                activity = "Yesterday meeting",
-            )
+            val event =
+                CalendarEventModel(
+                    id = "e2",
+                    userId = "u1",
+                    dateFrom = yesterday.toString(),
+                    dateTo = yesterday.toString(),
+                    activity = "Yesterday meeting",
+                )
             seedEvents(event)
             vm.selectDate(today)
 
@@ -210,13 +211,14 @@ class CalendarViewModelTest {
     fun `eventsForSelectedDate includes multi-day event that spans selected date`() =
         runTest(dispatcherRule.dispatcher) {
             val today = LocalDate.now()
-            val event = CalendarEventModel(
-                id = "e3",
-                userId = "u1",
-                dateFrom = today.minusDays(2).toString(),
-                dateTo = today.plusDays(2).toString(),
-                activity = "Week event",
-            )
+            val event =
+                CalendarEventModel(
+                    id = "e3",
+                    userId = "u1",
+                    dateFrom = today.minusDays(2).toString(),
+                    dateTo = today.plusDays(2).toString(),
+                    activity = "Week event",
+                )
             seedEvents(event)
             vm.selectDate(today)
 
@@ -237,20 +239,22 @@ class CalendarViewModelTest {
         runTest(dispatcherRule.dispatcher) {
             val today = LocalDate.now()
             val tomorrow = today.plusDays(1)
-            val todayEvent = CalendarEventModel(
-                id = "e-today",
-                userId = "u1",
-                dateFrom = today.toString(),
-                dateTo = today.toString(),
-                activity = "Today",
-            )
-            val tomorrowEvent = CalendarEventModel(
-                id = "e-tomorrow",
-                userId = "u1",
-                dateFrom = tomorrow.toString(),
-                dateTo = tomorrow.toString(),
-                activity = "Tomorrow",
-            )
+            val todayEvent =
+                CalendarEventModel(
+                    id = "e-today",
+                    userId = "u1",
+                    dateFrom = today.toString(),
+                    dateTo = today.toString(),
+                    activity = "Today",
+                )
+            val tomorrowEvent =
+                CalendarEventModel(
+                    id = "e-tomorrow",
+                    userId = "u1",
+                    dateFrom = tomorrow.toString(),
+                    dateTo = tomorrow.toString(),
+                    activity = "Tomorrow",
+                )
             seedEvents(todayEvent, tomorrowEvent)
             vm.selectDate(today)
 
@@ -339,12 +343,14 @@ class CalendarViewModelTest {
             advanceUntilIdle()
 
             vm.addEvent(
-                activity = "Team lunch",
-                allDay = false,
-                dateFrom = "2025-07-10",
-                dateTo = "2025-07-10",
-                timeFrom = "12:00",
-                timeTo = "13:00",
+                EventDraft(
+                    activity = "Team lunch",
+                    allDay = false,
+                    dateFrom = "2025-07-10",
+                    dateTo = "2025-07-10",
+                    timeFrom = "12:00",
+                    timeTo = "13:00",
+                ),
             )
             advanceUntilIdle()
 
@@ -364,12 +370,14 @@ class CalendarViewModelTest {
             advanceUntilIdle()
 
             vm.addEvent(
-                activity = "Solo day",
-                allDay = true,
-                dateFrom = "2025-07-15",
-                dateTo = "",
-                timeFrom = "",
-                timeTo = "",
+                EventDraft(
+                    activity = "Solo day",
+                    allDay = true,
+                    dateFrom = "2025-07-15",
+                    dateTo = "",
+                    timeFrom = "",
+                    timeTo = "",
+                ),
             )
             advanceUntilIdle()
 
@@ -389,12 +397,14 @@ class CalendarViewModelTest {
             advanceUntilIdle()
 
             vm.addEvent(
-                activity = "Ghost event",
-                allDay = false,
-                dateFrom = "2025-07-10",
-                dateTo = "2025-07-10",
-                timeFrom = "",
-                timeTo = "",
+                EventDraft(
+                    activity = "Ghost event",
+                    allDay = false,
+                    dateFrom = "2025-07-10",
+                    dateTo = "2025-07-10",
+                    timeFrom = "",
+                    timeTo = "",
+                ),
             )
             advanceUntilIdle()
 
@@ -413,12 +423,14 @@ class CalendarViewModelTest {
             advanceUntilIdle()
 
             vm.addEvent(
-                activity = "Holiday",
-                allDay = true,
-                dateFrom = "2025-08-01",
-                dateTo = "2025-08-01",
-                timeFrom = "09:00",
-                timeTo = "17:00",
+                EventDraft(
+                    activity = "Holiday",
+                    allDay = true,
+                    dateFrom = "2025-08-01",
+                    dateTo = "2025-08-01",
+                    timeFrom = "09:00",
+                    timeTo = "17:00",
+                ),
             )
             advanceUntilIdle()
 
@@ -471,13 +483,14 @@ class CalendarViewModelTest {
     @Test
     fun `updateEvent applies optimistic activity change`() =
         runTest(dispatcherRule.dispatcher) {
-            val original = CalendarEventModel(
-                id = "upd-1",
-                userId = "u1",
-                activity = "Original activity",
-                dateFrom = "2025-07-01",
-                dateTo = "2025-07-01",
-            )
+            val original =
+                CalendarEventModel(
+                    id = "upd-1",
+                    userId = "u1",
+                    activity = "Original activity",
+                    dateFrom = "2025-07-01",
+                    dateTo = "2025-07-01",
+                )
             seedEvents(original)
 
             val updated = original.copy(activity = "Updated activity")
@@ -580,12 +593,14 @@ class CalendarViewModelTest {
 
                 userId.value = "user-1"
                 vm.addEvent(
-                    activity = "Turbine event",
-                    allDay = false,
-                    dateFrom = "2025-09-01",
-                    dateTo = "2025-09-01",
-                    timeFrom = "10:00",
-                    timeTo = "11:00",
+                    EventDraft(
+                        activity = "Turbine event",
+                        allDay = false,
+                        dateFrom = "2025-09-01",
+                        dateTo = "2025-09-01",
+                        timeFrom = "10:00",
+                        timeTo = "11:00",
+                    ),
                 )
                 advanceUntilIdle()
 

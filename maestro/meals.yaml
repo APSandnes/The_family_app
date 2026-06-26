@@ -1,0 +1,34 @@
+appId: com.example.mainactivity
+tags:
+  - smoke
+  - meals
+---
+# Meals: open a plan, add a dinner to an empty day, then clear it.
+- launchApp:
+    appId: com.example.mainactivity
+- assertVisible: "Quick access"
+- scrollUntilVisible:
+    element: "Plan the week"
+    direction: DOWN
+- tapOn: "Plan the week"
+- assertVisible: "Meal planner"
+
+# Open the first plan
+- tapOn:
+    point: "50%,19%"
+
+# Add a meal to the first empty day
+- tapOn:
+    text: "Tap to add meal"
+    index: 0
+- inputText: "Maestro dinner"
+- tapOn: "Save"
+- assertVisible: "Maestro dinner"
+
+# Clear it again: tap the meal, move cursor to end, erase, save
+- tapOn: "Maestro dinner"
+- tapOn:
+    point: "70%,43%"
+- eraseText: 40
+- tapOn: "Save"
+- assertNotVisible: "Maestro dinner"

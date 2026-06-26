@@ -37,7 +37,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class BirthdayViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -209,7 +208,10 @@ class BirthdayViewModelTest {
             vm.add("Bob", "1985-06-15")
             advanceUntilIdle()
 
-            val aliceId = vm.birthdays.value.first { it.name == "Alice" }.id
+            val aliceId =
+                vm.birthdays.value
+                    .first { it.name == "Alice" }
+                    .id
             vm.update(aliceId, "Alice-Renamed", "1990-01-02")
             advanceUntilIdle()
 

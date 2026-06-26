@@ -46,14 +46,11 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -72,22 +69,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.mainactivity.ui.components.AppFab
 import com.example.mainactivity.ui.components.EmptyState
 import com.example.mainactivity.ui.components.FeatureTopBar
 import com.example.mainactivity.ui.components.InputDialog
-import com.example.mainactivity.ui.components.LoadingState
+import com.example.mainactivity.ui.components.ListCard
+import com.example.mainactivity.ui.components.ListSkeleton
+import com.example.mainactivity.ui.components.PullRefresh
 import com.example.mainactivity.ui.components.RefreshOnResume
 import com.example.mainactivity.ui.components.SwipeToRevealDelete
 import java.time.Instant
@@ -237,12 +237,13 @@ private fun CreatePlanDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                        ),
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                            ),
                     )
                 }
                 AnimatedVisibility(visible = showIconPicker) {
@@ -358,6 +359,7 @@ fun MealScreen(
 ) {
     val plans by viewModel.plans.collectAsStateWithLifecycle(emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle(false)
+    val planProgress by viewModel.planProgress.collectAsStateWithLifecycle(emptyMap())
     var showCreate by remember { mutableStateOf(false) }
 
     RefreshOnResume { viewModel.refresh() }
@@ -366,65 +368,57 @@ fun MealScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { FeatureTopBar("Meal planner", onBack) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreate = true },
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text("Create a meal plan") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.semantics { contentDescription = "Create new meal plan" },
-            )
+            AppFab(text = "Create a meal plan", icon = Icons.Filled.Add, onClick = { showCreate = true })
         },
     ) { padding ->
-        if (isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                LoadingState()
-            }
-        } else if (plans.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                EmptyState(
-                    Icons.Filled.Restaurant,
-                    "No meal plans yet",
-                    "No meal plans yet. Start planning!",
-                )
-            }
-        } else {
-            LazyColumn(
-                Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(plans, key = { it.id }) { plan ->
-                    val dayCount =
-                        runCatching {
-                            val from = LocalDate.parse(plan.fromDate)
-                            val to = LocalDate.parse(plan.toDate)
-                            (to.toEpochDay() - from.toEpochDay() + 1).toInt().coerceAtLeast(0)
-                        }.getOrDefault(0)
-                    val dateRange = "${formatMealDate(plan.fromDate)} – ${formatMealDate(plan.toDate)}"
-                    val planName = plan.name.ifBlank { "Meal plan" }
-                    val cardDescription = "$planName, $dateRange, $dayCount days"
+        PullRefresh(
+            onRefresh = { viewModel.refresh().join() },
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            if (isLoading) {
+                ListSkeleton(Modifier.fillMaxSize())
+            } else if (plans.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    EmptyState(
+                        Icons.Filled.Restaurant,
+                        "No meal plans yet",
+                        "Plan your family's meals for the week ahead.",
+                        actionLabel = "Create a meal plan",
+                        onAction = { showCreate = true },
+                    )
+                }
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(plans, key = { it.id }) { plan ->
+                        val dayCount =
+                            runCatching {
+                                val from = LocalDate.parse(plan.fromDate)
+                                val to = LocalDate.parse(plan.toDate)
+                                (to.toEpochDay() - from.toEpochDay() + 1).toInt().coerceAtLeast(0)
+                            }.getOrDefault(0)
+                        val dateRange = "${formatMealDate(plan.fromDate)} – ${formatMealDate(plan.toDate)}"
+                        val planName = plan.name.ifBlank { "Meal plan" }
+                        val prog = planProgress[plan.id]
+                        val planLabel =
+                            if (prog != null && prog.total > 0) {
+                                "${prog.planned} of ${prog.total} dinners planned"
+                            } else {
+                                "$dayCount days"
+                            }
+                        val cardDescription = "$planName, $dateRange, $planLabel"
 
-                    SwipeToRevealDelete(
-                        onDelete = { viewModel.deletePlan(plan) },
-                        shape = RoundedCornerShape(16.dp),
-                    ) {
-                        Card(
-                            onClick = { onOpen(plan.id) },
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                ),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .semantics { contentDescription = cardDescription },
+                        SwipeToRevealDelete(
+                            onDelete = { viewModel.deletePlan(plan) },
+                            modifier = Modifier.animateItem(),
+                            shape = RoundedCornerShape(20.dp),
                         ) {
-                            Row(
-                                Modifier.padding(18.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                            ListCard(
+                                onClick = { onOpen(plan.id) },
+                                modifier = Modifier.semantics { contentDescription = cardDescription },
                             ) {
                                 Box(
                                     Modifier
@@ -453,7 +447,7 @@ fun MealScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
-                                        "$dayCount days planned",
+                                        planLabel,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -635,12 +629,13 @@ fun MealDetailScreen(
                                             Modifier
                                                 .fillMaxWidth()
                                                 .focusRequester(focusRequester),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent,
-                                        ),
+                                        colors =
+                                            OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                                                focusedContainerColor = Color.Transparent,
+                                                unfocusedContainerColor = Color.Transparent,
+                                            ),
                                     )
                                     Row(
                                         horizontalArrangement = Arrangement.End,

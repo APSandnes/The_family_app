@@ -1,12 +1,15 @@
 package com.example.mainactivity.ui.wishlist
 
+import android.content.Context
 import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.UserModel
+import com.example.mainactivity.data.remote.SupabaseManager
 import com.example.mainactivity.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -43,7 +46,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class WishlistViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -52,8 +54,13 @@ class WishlistViewModelTest {
     private lateinit var familyChanged: MutableSharedFlow<Unit>
     private lateinit var vm: WishlistViewModel
 
+    // addWish only dereferences context when an image is attached (never in these tests).
+    private val ctx: Context = mockk(relaxed = true)
+
     @Before
     fun setUp() {
+        mockkObject(SupabaseManager)
+        every { SupabaseManager.client } throws RuntimeException("Supabase client not available in unit tests")
         repo = mockk(relaxed = true)
         userId = MutableStateFlow(null)
         familyChanged = MutableSharedFlow()
@@ -284,7 +291,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "New bicycle")
+            vm.addWish(ctx, "wl-1", WishDraft("New bicycle"))
             advanceUntilIdle()
 
             val items = vm.wishes.value
@@ -300,7 +307,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wishlist-99", "Lego set")
+            vm.addWish(ctx, "wishlist-99", WishDraft("Lego set"))
             advanceUntilIdle()
 
             assertEquals("wishlist-99", vm.wishes.value[0].wishlistId)
@@ -316,7 +323,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Delete me")
+            vm.addWish(ctx, "wl-1", WishDraft("Delete me"))
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
@@ -332,9 +339,9 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Keep me")
+            vm.addWish(ctx, "wl-1", WishDraft("Keep me"))
             advanceUntilIdle()
-            vm.addWish("wl-1", "Delete me")
+            vm.addWish(ctx, "wl-1", WishDraft("Delete me"))
             advanceUntilIdle()
 
             val toDelete = vm.wishes.value.first { it.text == "Delete me" }
@@ -355,7 +362,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Gift")
+            vm.addWish(ctx, "wl-1", WishDraft("Gift"))
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
@@ -374,7 +381,7 @@ class WishlistViewModelTest {
             userId.value = "u1"
             advanceUntilIdle()
 
-            vm.addWish("wl-1", "Gift")
+            vm.addWish(ctx, "wl-1", WishDraft("Gift"))
             advanceUntilIdle()
 
             val wish = vm.wishes.value.first()
@@ -388,7 +395,9 @@ class WishlistViewModelTest {
 
             assertFalse(
                 "Wish should be unchecked after two toggles",
-                vm.wishes.value.first { it.id == wish.id }.checked,
+                vm.wishes.value
+                    .first { it.id == wish.id }
+                    .checked,
             )
         }
 

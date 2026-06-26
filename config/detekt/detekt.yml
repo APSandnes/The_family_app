@@ -1,0 +1,39 @@
+# detekt overrides on top of the bundled default config (buildUponDefaultConfig = true).
+# Formatting is handled by Spotless/ktlint, so the detekt-formatting ruleset is not used.
+# Tuned for Jetpack Compose, which legitimately produces long, many-param @Composable funcs.
+
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    thresholdInFiles: 40
+    thresholdInClasses: 40
+    thresholdInInterfaces: 40
+    thresholdInObjects: 40
+
+naming:
+  FunctionNaming:
+    # @Composable functions are intentionally PascalCase.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MaxLineLength:
+    # The project deliberately sets `max_line_length = off` in .editorconfig (ktlint
+    # honours it); detekt's line-length rule would contradict that policy.
+    active: false
+  MagicNumber:
+    ignoreAnnotated: ['Composable']
+    ignoreNumbers: ['-1', '0', '1', '2', '100']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Composable', 'Preview']
+  ReturnCount:
+    max: 4

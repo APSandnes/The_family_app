@@ -11,7 +11,6 @@ import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 class EntitiesTest {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     // ──────────────────────────────────────────────────────────────
@@ -20,17 +19,18 @@ class EntitiesTest {
 
     @Test
     fun userModel_roundTrip() {
-        val original = UserModel(
-            id = "u1",
-            authId = "auth-uuid",
-            name = "Alice",
-            email = "alice@example.com",
-            birthday = "1990-01-15",
-            mobile = "+4712345678",
-            familyId = "f1",
-            avatarColor = 0xFF6200EE.toInt(),
-            avatarUrl = "https://example.com/avatar.png",
-        )
+        val original =
+            UserModel(
+                id = "u1",
+                authId = "auth-uuid",
+                name = "Alice",
+                email = "alice@example.com",
+                birthday = "1990-01-15",
+                mobile = "+4712345678",
+                familyId = "f1",
+                avatarColor = 0xFF6200EE.toInt(),
+                avatarUrl = "https://example.com/avatar.png",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<UserModel>(serialized)
         assertEquals(original, deserialized)
@@ -46,7 +46,8 @@ class EntitiesTest {
 
     @Test
     fun userModel_serialNameMapping() {
-        val jsonStr = """
+        val jsonStr =
+            """
             {
               "id": "u3",
               "auth_id": "auth-abc",
@@ -58,7 +59,7 @@ class EntitiesTest {
               "avatar_color": 123,
               "avatar_url": "https://x.com/img.png"
             }
-        """.trimIndent()
+            """.trimIndent()
         val user = json.decodeFromString<UserModel>(jsonStr)
         assertEquals("auth-abc", user.authId)
         assertEquals("f2", user.familyId)
@@ -109,13 +110,14 @@ class EntitiesTest {
 
     @Test
     fun shoppingListModel_roundTrip() {
-        val original = ShoppingListModel(
-            id = "sl1",
-            title = "Weekly Shop",
-            ownerUserId = "u1",
-            familyId = "f1",
-            icon = "shopping_cart",
-        )
+        val original =
+            ShoppingListModel(
+                id = "sl1",
+                title = "Weekly Shop",
+                ownerUserId = "u1",
+                familyId = "f1",
+                icon = "shopping_cart",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<ShoppingListModel>(serialized)
         assertEquals(original, deserialized)
@@ -167,15 +169,16 @@ class EntitiesTest {
 
     @Test
     fun mealPlanModel_roundTrip() {
-        val original = MealPlanModel(
-            id = "mp1",
-            familyId = "f1",
-            fromDate = "2025-01-06",
-            toDate = "2025-01-12",
-            week = 2,
-            name = "Week 2",
-            icon = "restaurant",
-        )
+        val original =
+            MealPlanModel(
+                id = "mp1",
+                familyId = "f1",
+                fromDate = "2025-01-06",
+                toDate = "2025-01-12",
+                week = 2,
+                name = "Week 2",
+                icon = "restaurant",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<MealPlanModel>(serialized)
         assertEquals(original, deserialized)
@@ -203,13 +206,14 @@ class EntitiesTest {
 
     @Test
     fun mealPlanDayModel_roundTrip() {
-        val original = MealPlanDayModel(
-            id = "mpd1",
-            mealPlanId = "mp1",
-            day = "Monday",
-            date = "2025-01-06",
-            food = "Pasta",
-        )
+        val original =
+            MealPlanDayModel(
+                id = "mpd1",
+                mealPlanId = "mp1",
+                day = "Monday",
+                date = "2025-01-06",
+                food = "Pasta",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<MealPlanDayModel>(serialized)
         assertEquals(original, deserialized)
@@ -229,18 +233,19 @@ class EntitiesTest {
 
     @Test
     fun calendarEventModel_roundTrip() {
-        val original = CalendarEventModel(
-            id = "ce1",
-            userId = "u1",
-            familyId = "f1",
-            dateFrom = "2025-06-01",
-            dateTo = "2025-06-01",
-            timeFrom = "09:00",
-            timeTo = "10:00",
-            activity = "Team meeting",
-            allDay = false,
-            icon = "schedule",
-        )
+        val original =
+            CalendarEventModel(
+                id = "ce1",
+                userId = "u1",
+                familyId = "f1",
+                dateFrom = "2025-06-01",
+                dateTo = "2025-06-01",
+                timeFrom = "09:00",
+                timeTo = "10:00",
+                activity = "Team meeting",
+                allDay = false,
+                icon = "schedule",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<CalendarEventModel>(serialized)
         assertEquals(original, deserialized)
@@ -261,14 +266,15 @@ class EntitiesTest {
 
     @Test
     fun calendarEventModel_serialNameMapping() {
-        val jsonStr = """
+        val jsonStr =
+            """
             {
               "id":"ce1","user_id":"u1","family_id":"f1",
               "date_from":"2025-06-01","date_to":"2025-06-01",
               "time_from":"08:00","time_to":"09:00",
               "activity":"Standup","all_day":true,"icon":"event"
             }
-        """.trimIndent()
+            """.trimIndent()
         val event = json.decodeFromString<CalendarEventModel>(jsonStr)
         assertEquals("u1", event.userId)
         assertEquals("2025-06-01", event.dateFrom)
@@ -284,14 +290,15 @@ class EntitiesTest {
 
     @Test
     fun birthdayModel_roundTrip() {
-        val original = BirthdayModel(
-            id = "b1",
-            name = "Grandma",
-            date = "1945-03-22",
-            familyId = "f1",
-            userId = "u2",
-            madeByUserId = "u1",
-        )
+        val original =
+            BirthdayModel(
+                id = "b1",
+                name = "Grandma",
+                date = "1945-03-22",
+                familyId = "f1",
+                userId = "u2",
+                madeByUserId = "u1",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<BirthdayModel>(serialized)
         assertEquals(original, deserialized)
@@ -319,13 +326,14 @@ class EntitiesTest {
 
     @Test
     fun wishlistModel_roundTrip() {
-        val original = WishlistModel(
-            id = "wl1",
-            ownerUserId = "u1",
-            familyId = "f1",
-            name = "Birthday Wishes",
-            icon = "card_giftcard",
-        )
+        val original =
+            WishlistModel(
+                id = "wl1",
+                ownerUserId = "u1",
+                familyId = "f1",
+                name = "Birthday Wishes",
+                icon = "card_giftcard",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<WishlistModel>(serialized)
         assertEquals(original, deserialized)
@@ -351,13 +359,14 @@ class EntitiesTest {
 
     @Test
     fun wishModel_roundTrip() {
-        val original = WishModel(
-            id = "w1",
-            wishlistId = "wl1",
-            userId = "u1",
-            text = "New bike",
-            checked = false,
-        )
+        val original =
+            WishModel(
+                id = "w1",
+                wishlistId = "wl1",
+                userId = "u1",
+                text = "New bike",
+                checked = false,
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<WishModel>(serialized)
         assertEquals(original, deserialized)
@@ -384,14 +393,15 @@ class EntitiesTest {
 
     @Test
     fun conversationModel_roundTrip() {
-        val original = ConversationModel(
-            id = "c1",
-            userFrom = "u1",
-            userTo = "u2",
-            name = "Chat with Bob",
-            familyId = "f1",
-            imageUri = "https://example.com/group.png",
-        )
+        val original =
+            ConversationModel(
+                id = "c1",
+                userFrom = "u1",
+                userTo = "u2",
+                name = "Chat with Bob",
+                familyId = "f1",
+                imageUri = "https://example.com/group.png",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<ConversationModel>(serialized)
         assertEquals(original, deserialized)
@@ -422,15 +432,16 @@ class EntitiesTest {
 
     @Test
     fun userLocationModel_roundTrip() {
-        val original = UserLocationModel(
-            userId = "u1",
-            familyId = "f1",
-            lat = 59.9139,
-            lng = 10.7522,
-            displayName = "Alice",
-            visible = true,
-            updatedAt = "2025-06-25T12:00:00Z",
-        )
+        val original =
+            UserLocationModel(
+                userId = "u1",
+                familyId = "f1",
+                lat = 59.9139,
+                lng = 10.7522,
+                displayName = "Alice",
+                visible = true,
+                updatedAt = "2025-06-25T12:00:00Z",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<UserLocationModel>(serialized)
         assertEquals(original, deserialized)
@@ -464,12 +475,13 @@ class EntitiesTest {
 
     @Test
     fun conversationParticipantModel_roundTrip() {
-        val original = ConversationParticipantModel(
-            id = "cp1",
-            conversationId = "c1",
-            userId = "u1",
-            joinedAt = "2025-01-01T10:00:00Z",
-        )
+        val original =
+            ConversationParticipantModel(
+                id = "cp1",
+                conversationId = "c1",
+                userId = "u1",
+                joinedAt = "2025-01-01T10:00:00Z",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<ConversationParticipantModel>(serialized)
         assertEquals(original, deserialized)
@@ -490,16 +502,17 @@ class EntitiesTest {
 
     @Test
     fun messageModel_roundTrip() {
-        val original = MessageModel(
-            id = "m1",
-            conversationId = "c1",
-            userFrom = "u1",
-            text = "Hello!",
-            sentAt = "2025-06-25T09:00:00Z",
-            replyToId = null,
-            messageType = "text",
-            mediaUrl = null,
-        )
+        val original =
+            MessageModel(
+                id = "m1",
+                conversationId = "c1",
+                userFrom = "u1",
+                text = "Hello!",
+                sentAt = "2025-06-25T09:00:00Z",
+                replyToId = null,
+                messageType = "text",
+                mediaUrl = null,
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<MessageModel>(serialized)
         assertEquals(original, deserialized)
@@ -515,14 +528,15 @@ class EntitiesTest {
 
     @Test
     fun messageModel_nullableReplyToId() {
-        val msg = MessageModel(
-            id = "m2",
-            conversationId = "c1",
-            userFrom = "u1",
-            text = "Reply",
-            sentAt = "2025-01-01T00:00:00Z",
-            replyToId = "m1",
-        )
+        val msg =
+            MessageModel(
+                id = "m2",
+                conversationId = "c1",
+                userFrom = "u1",
+                text = "Reply",
+                sentAt = "2025-01-01T00:00:00Z",
+                replyToId = "m1",
+            )
         assertEquals("m1", msg.replyToId)
     }
 
@@ -544,14 +558,15 @@ class EntitiesTest {
 
     @Test
     fun messageReactionModel_roundTrip() {
-        val original = MessageReactionModel(
-            id = "r1",
-            messageId = "m1",
-            conversationId = "c1",
-            userId = "u1",
-            emoji = "👍",
-            createdAt = "2025-06-25T10:00:00Z",
-        )
+        val original =
+            MessageReactionModel(
+                id = "r1",
+                messageId = "m1",
+                conversationId = "c1",
+                userId = "u1",
+                emoji = "👍",
+                createdAt = "2025-06-25T10:00:00Z",
+            )
         val serialized = json.encodeToString(original)
         val deserialized = json.decodeFromString<MessageReactionModel>(serialized)
         assertEquals(original, deserialized)
@@ -574,24 +589,27 @@ class EntitiesTest {
     @Test
     fun conversationWithPreview_construction() {
         val conversation = ConversationModel(id = "c1", userFrom = "u1", name = "Family Group")
-        val lastMessage = MessageModel(
-            id = "m1",
-            conversationId = "c1",
-            userFrom = "u2",
-            text = "Hey!",
-            sentAt = "2025-06-25T08:00:00Z",
-        )
-        val participants = listOf(
-            UserModel(id = "u1", name = "Alice", email = "alice@example.com"),
-            UserModel(id = "u2", name = "Bob", email = "bob@example.com"),
-        )
-        val preview = ConversationWithPreview(
-            conversation = conversation,
-            lastMessage = lastMessage,
-            lastSenderName = "Bob",
-            unreadCount = 3,
-            participants = participants,
-        )
+        val lastMessage =
+            MessageModel(
+                id = "m1",
+                conversationId = "c1",
+                userFrom = "u2",
+                text = "Hey!",
+                sentAt = "2025-06-25T08:00:00Z",
+            )
+        val participants =
+            listOf(
+                UserModel(id = "u1", name = "Alice", email = "alice@example.com"),
+                UserModel(id = "u2", name = "Bob", email = "bob@example.com"),
+            )
+        val preview =
+            ConversationWithPreview(
+                conversation = conversation,
+                lastMessage = lastMessage,
+                lastSenderName = "Bob",
+                unreadCount = 3,
+                participants = participants,
+            )
 
         assertEquals(conversation, preview.conversation)
         assertEquals(lastMessage, preview.lastMessage)
@@ -603,13 +621,14 @@ class EntitiesTest {
     @Test
     fun conversationWithPreview_nullableLastMessageAndSender() {
         val convo = ConversationModel(id = "c2", userFrom = "u1")
-        val preview = ConversationWithPreview(
-            conversation = convo,
-            lastMessage = null,
-            lastSenderName = null,
-            unreadCount = 0,
-            participants = emptyList(),
-        )
+        val preview =
+            ConversationWithPreview(
+                conversation = convo,
+                lastMessage = null,
+                lastSenderName = null,
+                unreadCount = 0,
+                participants = emptyList(),
+            )
 
         assertNull(preview.lastMessage)
         assertNull(preview.lastSenderName)

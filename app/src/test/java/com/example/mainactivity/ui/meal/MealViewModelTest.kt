@@ -5,11 +5,13 @@ import com.example.mainactivity.data.FamilyRepository
 import com.example.mainactivity.data.MealPlanDayModel
 import com.example.mainactivity.data.MealPlanModel
 import com.example.mainactivity.data.UserModel
+import com.example.mainactivity.data.remote.SupabaseManager
 import com.example.mainactivity.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -43,7 +45,6 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class MealViewModelTest {
-
     @get:Rule
     val dispatcherRule = MainDispatcherRule()
 
@@ -54,6 +55,8 @@ class MealViewModelTest {
 
     @Before
     fun setUp() {
+        mockkObject(SupabaseManager)
+        every { SupabaseManager.client } throws RuntimeException("Supabase client not available in unit tests")
         resetCompanionCache()
         repo = mockk(relaxed = true)
         userId = MutableStateFlow(null)
@@ -72,12 +75,11 @@ class MealViewModelTest {
      * [cache]) cannot bleed into the next test's ViewModel construction.
      */
     private fun resetCompanionCache() {
-        val companionField = MealViewModel::class.java.getDeclaredField("Companion")
-        companionField.isAccessible = true
-        val companion = companionField.get(null)
-        val cacheField = companion.javaClass.getDeclaredField("cache")
+        // `cache` is a companion-object var, compiled to a private STATIC field on the
+        // MealViewModel class itself (not on the Companion class).
+        val cacheField = MealViewModel::class.java.getDeclaredField("cache")
         cacheField.isAccessible = true
-        cacheField.set(companion, emptyList<MealPlanModel>())
+        cacheField.set(null, emptyList<MealPlanModel>())
     }
 
     /** Seeds [MealViewModel._plans] via reflection, bypassing the Supabase load path. */
@@ -380,13 +382,14 @@ class MealViewModelTest {
     @Test
     fun `setFood updates the food field for the matching day`() =
         runTest(dispatcherRule.dispatcher) {
-            val day = MealPlanDayModel(
-                id = "day-1",
-                mealPlanId = "plan-1",
-                day = "Monday",
-                date = "2024-01-01",
-                food = "",
-            )
+            val day =
+                MealPlanDayModel(
+                    id = "day-1",
+                    mealPlanId = "plan-1",
+                    day = "Monday",
+                    date = "2024-01-01",
+                    food = "",
+                )
             seedDays(listOf(day))
 
             vm.setFood(day, "Pizza")
