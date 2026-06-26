@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flight
@@ -195,10 +197,12 @@ fun ShoppingDetailScreen(
     var showRename by remember { mutableStateOf(false) }
     var showChangeIcon by remember { mutableStateOf(false) }
     val remaining = items.count { !it.checked }
-    val sortedItems = remember(items) { items.sortedWith(compareBy { it.checked }) }
+    val active = remember(items) { items.filter { !it.checked } }
+    val completed = remember(items) { items.filter { it.checked } }
+    var showCompleted by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
-    LaunchedEffect(sortedItems.size) {
-        if (sortedItems.isNotEmpty()) listState.animateScrollToItem(sortedItems.lastIndex)
+    LaunchedEffect(active.size) {
+        if (active.isNotEmpty()) listState.animateScrollToItem(active.size - 1)
     }
 
     fun addItem() {
@@ -300,8 +304,23 @@ fun ShoppingDetailScreen(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(sortedItems, key = { it.id }) { item ->
+                items(active, key = { it.id }) { item ->
                     ShoppingItemRow(item, viewModel, Modifier.animateItem())
+                }
+                if (completed.isNotEmpty()) {
+                    item(key = "completed-header") {
+                        CompletedHeader(
+                            count = completed.size,
+                            expanded = showCompleted,
+                            onToggle = { showCompleted = !showCompleted },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                    if (showCompleted) {
+                        items(completed, key = { it.id }) { item ->
+                            ShoppingItemRow(item, viewModel, Modifier.animateItem())
+                        }
+                    }
                 }
             }
         }
@@ -407,6 +426,36 @@ private fun ShoppingItemRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompletedHeader(
+    count: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onToggle)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Completed ($count)",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = if (expanded) "Hide completed items" else "Show completed items",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
